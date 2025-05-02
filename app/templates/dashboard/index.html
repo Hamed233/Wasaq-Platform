@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}لوحة التحكم - وقاف{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.3s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .recommendation-card {
+        transition: all 0.3s;
+    }
+    .recommendation-card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 bg-primary text-white shadow">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">مرحباً، {{ current_user.first_name }}</h2>
+                            <p class="mb-0">إليك لوحة التحكم الخاصة بمنصة وقاف لإدارة الأراضي الوقفية</p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('lands.map_view') }}" class="btn btn-light">
+                                <i class="fas fa-map-marked-alt me-2"></i>عرض الخريطة
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-4 mb-md-0">
+            <div class="card h-100 border-0 shadow-sm stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-gradient text-white rounded p-3 me-3">
+                            <i class="fas fa-map fa-2x"></i>
+                        </div>
+                        <h5 class="card-title mb-0">إجمالي الأراضي</h5>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-0">{{ total_lands }}</h2>
+                    <p class="text-muted">أرض وقفية</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4 mb-md-0">
+            <div class="card h-100 border-0 shadow-sm stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-gradient text-white rounded p-3 me-3">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                        <h5 class="card-title mb-0">الأراضي المتاحة</h5>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-0">{{ available_lands }}</h2>
+                    <p class="text-muted">متاحة للاستثمار</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4 mb-md-0">
+            <div class="card h-100 border-0 shadow-sm stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-gradient text-white rounded p-3 me-3">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                        <h5 class="card-title mb-0">الأراضي المستثمرة</h5>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-0">{{ invested_lands }}</h2>
+                    <p class="text-muted">قيد الاستثمار</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-gradient text-white rounded p-3 me-3">
+                            <i class="fas fa-tools fa-2x"></i>
+                        </div>
+                        <h5 class="card-title mb-0">قيد التطوير</h5>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-0">{{ under_development }}</h2>
+                    <p class="text-muted">في مرحلة التطوير</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Regional Stats -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">إحصائيات المناطق</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for region in region_stats %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">منطقة {{ region.name }}</h5>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>عدد الأراضي:</span>
+                                        <strong>{{ region.count }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>إجمالي المساحة:</span>
+                                        <strong>{{ '{:,.0f}'.format(region.total_area) }} متر مربع</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>متوسط العائد:</span>
+                                        <strong>{{ '{:.1f}'.format(region.avg_return) }}%</strong>
+                                    </div>
+                                    <div class="progress mt-3">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (region.count / total_lands * 100) if total_lands > 0 else 0 }}%" aria-valuenow="{{ region.count }}" aria-valuemin="0" aria-valuemax="{{ total_lands }}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <a href="{{ url_for('dashboard.statistics') }}" class="btn btn-outline-primary">عرض المزيد من الإحصائيات</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Recommendations -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">أهم التوصيات</h5>
+                    <a href="{{ url_for('dashboard.recommendations') }}" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if top_recommendations %}
+                    <div class="list-group list-group-flush">
+                        {% for rec in top_recommendations %}
+                        <a href="#" class="list-group-item list-group-item-action recommendation-card">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <h6 class="mb-1">{{ rec.title }}</h6>
+                                <span class="badge bg-{{ 'danger' if rec.priority == 'high' else 'warning' if rec.priority == 'medium' else 'info' }}">{{ rec.priority }}</span>
+                            </div>
+                            <p class="mb-1 text-muted small">{{ rec.description[:100] }}{% if rec.description|length > 100 %}...{% endif %}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small>الثقة: {{ '{:.0f}%'.format(rec.confidence_score * 100) }}</small>
+                                <small>التاريخ: {{ rec.created_at.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center p-4">
+                        <i class="fas fa-lightbulb fa-3x text-muted mb-3"></i>
+                        <p>لا توجد توصيات حالياً</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Reports -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">أحدث التقارير</h5>
+                    <a href="{{ url_for('reports.index') }}" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>العنوان</th>
+                                    <th>النوع</th>
+                                    <th>الأرض</th>
+                                    <th>التاريخ</th>
+                                    <th>الحالة</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if recent_reports %}
+                                {% for report in recent_reports %}
+                                <tr>
+                                    <td>{{ report.title }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'primary' if report.type == 'inspection' else 'info' if report.type == 'valuation' else 'success' if report.type == 'environmental' else 'warning' if report.type == 'legal' else 'secondary' }}">
+                                            {{ report.type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ report.land.name if report.land else '-' }}</td>
+                                    <td>{{ report.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if report.status == 'approved' else 'danger' if report.status == 'rejected' else 'warning' if report.status == 'pending' else 'secondary' }}">
+                                            {{ report.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('reports.view', report_id=report.id) }}" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                                        <p>لا توجد تقارير حالياً</p>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize any dashboard-specific JavaScript here
+    document.addEventListener('DOMContentLoaded', function() {
+        // Example: Add tooltips to elements with data-bs-toggle="tooltip"
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+{% endblock %}

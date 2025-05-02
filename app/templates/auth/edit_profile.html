@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}تعديل الملف الشخصي - وقاف{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border-radius: 10px;
+    }
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        margin: 0 auto 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Back button -->
+    <div class="mb-3">
+        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>العودة إلى الملف الشخصي
+        </a>
+    </div>
+    
+    <!-- Form Header -->
+    <div class="card border-0 shadow-sm mb-4 form-card">
+        <div class="card-header bg-white py-3">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-user-edit me-2"></i>تعديل الملف الشخصي
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="text-center mb-4">
+                <div class="profile-avatar">
+                    {{ current_user.username[0]|upper }}
+                </div>
+            </div>
+            
+            <form method="post">
+                {{ form.csrf_token }}
+                
+                <!-- Basic Information -->
+                <h6 class="mb-3 text-primary">المعلومات الأساسية</h6>
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <label for="username" class="form-label required-field">اسم المستخدم</label>
+                        {{ form.username(class="form-control", placeholder="أدخل اسم المستخدم") }}
+                        {% if form.username.errors %}
+                            <div class="text-danger">
+                                {% for error in form.username.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label required-field">البريد الإلكتروني</label>
+                        {{ form.email(class="form-control", placeholder="أدخل البريد الإلكتروني") }}
+                        {% if form.email.errors %}
+                            <div class="text-danger">
+                                {% for error in form.email.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Contact Information -->
+                <h6 class="mb-3 text-primary">معلومات الاتصال</h6>
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <label for="phone" class="form-label">رقم الهاتف</label>
+                        {{ form.phone(class="form-control", placeholder="أدخل رقم الهاتف") }}
+                        {% if form.phone.errors %}
+                            <div class="text-danger">
+                                {% for error in form.phone.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="address" class="form-label">العنوان</label>
+                        {{ form.address(class="form-control", placeholder="أدخل العنوان") }}
+                        {% if form.address.errors %}
+                            <div class="text-danger">
+                                {% for error in form.address.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Preferences -->
+                <h6 class="mb-3 text-primary">التفضيلات</h6>
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <label for="preferred_language" class="form-label">اللغة المفضلة</label>
+                        {{ form.preferred_language(class="form-select") }}
+                        {% if form.preferred_language.errors %}
+                            <div class="text-danger">
+                                {% for error in form.preferred_language.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="notification_preferences" class="form-label">تفضيلات الإشعارات</label>
+                        {{ form.notification_preferences(class="form-select") }}
+                        {% if form.notification_preferences.errors %}
+                            <div class="text-danger">
+                                {% for error in form.notification_preferences.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <div class="form-check">
+                            {{ form.receive_newsletter(class="form-check-input") }}
+                            <label class="form-check-label" for="receive_newsletter">
+                                المشاركة في النشرات الإخبارية للوصول إلى الأخبار الفورية والتحديثات
+                            </label>
+                            {% if form.receive_newsletter.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.receive_newsletter.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bio -->
+                <h6 class="mb-3 text-primary">نبذة شخصية</h6>
+                <div class="row mb-4">
+                    <div class="col-md-12 mb-3">
+                        <label for="bio" class="form-label">نبذة عنك</label>
+                        {{ form.bio(class="form-control", rows=4, placeholder="أخبرنا قليلا عن نفسك...") }}
+                        {% if form.bio.errors %}
+                            <div class="text-danger">
+                                {% for error in form.bio.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Submit Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>إلغاء
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>حفظ التعديلات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ report.title }} - u0648u0642u0627u0641{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-header {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+    }
+    .report-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    .report-content {
+        line-height: 1.8;
+    }
+    .report-tags .badge {
+        margin-right: 5px;
+    }
+    .report-attachment {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    .report-attachment-icon {
+        font-size: 2rem;
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Back button -->
+    <div class="mb-3">
+        <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>u0627u0644u0639u0648u062fu0629 u0625u0644u0649 u0642u0627u0626u0645u0629 u0627u0644u062au0642u0627u0631u064au0631
+        </a>
+    </div>
+    
+    <!-- Report Header -->
+    <div class="report-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">{{ report.title }}</h1>
+                <div class="report-meta">
+                    <span>
+                        <i class="fas fa-user me-1"></i>{{ report.author.username }}
+                    </span>
+                    <span class="mx-2">|</span>
+                    <span>
+                        <i class="fas fa-calendar-alt me-1"></i>{{ report.created_at.strftime('%Y-%m-%d') }}
+                    </span>
+                    <span class="mx-2">|</span>
+                    <span>
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        <a href="{{ url_for('lands.view', land_id=report.land.id) }}" class="text-decoration-none">
+                            {{ report.land.name }}
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="report-tags mb-2">
+                    {% if report.report_type == 'status' %}
+                        <span class="badge bg-info">u062du0627u0644u0629</span>
+                    {% elif report.report_type == 'project_update' %}
+                        <span class="badge bg-primary">u062au062du062fu064au062b u0645u0634u0631u0648u0639</span>
+                    {% elif report.report_type == 'maintenance' %}
+                        <span class="badge bg-warning text-dark">u0635u064au0627u0646u0629</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ report.report_type }}</span>
+                    {% endif %}
+                    
+                    {% if report.status == 'draft' %}
+                        <span class="badge bg-secondary">u0645u0633u0648u062fu0629</span>
+                    {% elif report.status == 'published' %}
+                        <span class="badge bg-success">u0645u0646u0634u0648u0631</span>
+                    {% elif report.status == 'archived' %}
+                        <span class="badge bg-dark">u0645u0624u0631u0634u0641</span>
+                    {% endif %}
+                </div>
+                
+                {% if current_user.is_admin() or current_user.id == report.author_id %}
+                <div>
+                    <a href="{{ url_for('reports.edit', report_id=report.id) }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-edit me-1"></i>u062au062du0631u064au0631
+                    </a>
+                    <a href="{{ url_for('reports.delete', report_id=report.id) }}" class="btn btn-outline-danger" onclick="return confirm('u0647u0644 u0623u0646u062a u0645u062au0623u0643u062f u0645u0646 u062du0630u0641 u0647u0630u0627 u0627u0644u062au0642u0631u064au0631u061f')">
+                        <i class="fas fa-trash me-1"></i>u062du0630u0641
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Content -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="report-content">
+                {{ report.content|safe }}
+            </div>
+            
+            {% if report.tags %}
+                <div class="report-tags mt-4">
+                    <h6 class="mb-2">u0627u0644u0648u0633u0648u0645:</h6>
+                    {% for tag in report.tags.split(',') %}
+                        {% if tag.strip() %}
+                            <span class="badge bg-light text-dark">{{ tag.strip() }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            {% if report.attachment_path %}
+                <div class="report-attachment">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="report-attachment-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h6 class="mb-1">u0645u0631u0641u0642 u0627u0644u062au0642u0631u064au0631</h6>
+                            <p class="mb-0 small">{{ report.attachment_filename }}</p>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('reports.download_attachment', report_id=report.id) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-download me-1"></i>u062au062du0645u064au0644
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Related Reports -->
+    {% if related_reports %}
+        <h5 class="mb-3">u062au0642u0627u0631u064au0631 u0630u0627u062a u0635u0644u0629</h5>
+        <div class="row">
+            {% for related in related_reports %}
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <a href="{{ url_for('reports.view', report_id=related.id) }}" class="text-decoration-none">
+                                    {{ related.title }}
+                                </a>
+                            </h6>
+                            <div class="small text-muted mb-2">
+                                <i class="fas fa-calendar-alt me-1"></i>{{ related.created_at.strftime('%Y-%m-%d') }}
+                                <span class="mx-1">|</span>
+                                {% if related.report_type == 'status' %}
+                                    <span class="badge bg-info">u062du0627u0644u0629</span>
+                                {% elif related.report_type == 'project_update' %}
+                                    <span class="badge bg-primary">u062au062du062fu064au062b u0645u0634u0631u0648u0639</span>
+                                {% elif related.report_type == 'maintenance' %}
+                                    <span class="badge bg-warning text-dark">u0635u064au0627u0646u0629</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ related.report_type }}</span>
+                                {% endif %}
+                            </div>
+                            <p class="card-text small">{{ related.content|striptags|truncate(100) }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <!-- Export Options -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-file-export me-2"></i>u062eu064au0627u0631u0627u062a u0627u0644u062au0635u062fu064au0631
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="d-grid">
+                        <a href="{{ url_for('reports.export_as_pdf', report_id=report.id) }}" class="btn btn-outline-danger">
+                            <i class="fas fa-file-pdf me-2"></i>u062au0635u062fu064au0631 u0643u0645u0644u0641 PDF
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="d-grid">
+                        <a href="{{ url_for('reports.export_as_text', report_id=report.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-file-alt me-2"></i>u062au0635u062fu064au0631 u0643u0645u0644u0641 u0646u0635u064a
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-primary" onclick="window.print();">
+                            <i class="fas fa-print me-2"></i>u0637u0628u0627u0639u0629 u0627u0644u062au0642u0631u064au0631
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

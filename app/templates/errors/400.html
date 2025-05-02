@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}خطأ 400 - طلب غير صالح - وقاف{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="error-container mb-4">
+                <h1 class="display-1 text-danger">400</h1>
+                <h2 class="mb-4">طلب غير صالح</h2>
+                <p class="lead mb-4">عذراً، لقد تم إرسال طلب غير صالح إلى الخادم.</p>
+                <p>يرجى التحقق من المعلومات المدخلة والمحاولة مرة أخرى.</p>
+                <div class="mt-5">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>العودة إلى الصفحة الرئيسية
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}الملف الشخصي - وقاف{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+    }
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        margin-right: 20px;
+    }
+    .profile-card {
+        border-radius: 10px;
+    }
+    .activity-item {
+        padding: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+    .activity-time {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Profile Header -->
+    <div class="profile-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8 d-flex align-items-center">
+                <div class="profile-avatar">
+                    {{ current_user.username[0]|upper }}
+                </div>
+                <div>
+                    <h2 class="mb-1">{{ current_user.username }}</h2>
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-envelope me-1"></i>{{ current_user.email }}
+                        <span class="mx-2">|</span>
+                        <i class="fas fa-user-tag me-1"></i>
+                        {% if current_user.is_admin() %}
+                            مدير
+                        {% elif current_user.is_moderator() %}
+                            مشرف
+                        {% elif current_user.is_investor() %}
+                            مستثمر
+                        {% else %}
+                            مستخدم
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i>تعديل الملف الشخصي
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- User Information -->
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm profile-card">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>معلومات الحساب
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <th width="40%">الاسم</th>
+                                <td>{{ current_user.username }}</td>
+                            </tr>
+                            <tr>
+                                <th>البريد الإلكتروني</th>
+                                <td>{{ current_user.email }}</td>
+                            </tr>
+                            <tr>
+                                <th>الدور</th>
+                                <td>
+                                    {% if current_user.is_admin() %}
+                                        <span class="badge bg-danger">مدير</span>
+                                    {% elif current_user.is_moderator() %}
+                                        <span class="badge bg-warning text-dark">مشرف</span>
+                                    {% elif current_user.is_investor() %}
+                                        <span class="badge bg-success">مستثمر</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">مستخدم</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>تاريخ الانضمام</th>
+                                <td>{{ current_user.created_at.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            <tr>
+                                <th>آخر تسجيل دخول</th>
+                                <td>{{ current_user.last_login.strftime('%Y-%m-%d %H:%M') if current_user.last_login else 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-key me-1"></i>تغيير كلمة المرور
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Stats -->
+            <div class="card border-0 shadow-sm profile-card mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>إحصائيات المستخدم
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h3 class="mb-0">{{ reports_count }}</h3>
+                            <small class="text-muted">التقارير</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="mb-0">{{ recommendations_count }}</h3>
+                            <small class="text-muted">التوصيات</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="mb-0">{{ chat_sessions_count }}</h3>
+                            <small class="text-muted">المحادثات</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm profile-card">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>النشاط الأخير
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if activities %}
+                        <div class="list-group list-group-flush">
+                            {% for activity in activities %}
+                                <div class="activity-item d-flex align-items-start">
+                                    {% if activity.type == 'report' %}
+                                        <div class="activity-icon bg-info-subtle text-info">
+                                            <i class="fas fa-file-alt"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-1">إضافة تقرير جديد</h6>
+                                                <span class="activity-time">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                                            </div>
+                                            <p class="mb-1">قمت بإضافة تقرير "{{ activity.title }}" للأرض {{ activity.land_name }}.</p>
+                                            <a href="{{ url_for('reports.view', report_id=activity.id) }}" class="text-decoration-none small">عرض التقرير</a>
+                                        </div>
+                                    {% elif activity.type == 'recommendation' %}
+                                        <div class="activity-icon bg-warning-subtle text-warning">
+                                            <i class="fas fa-lightbulb"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-1">توليد توصية جديدة</h6>
+                                                <span class="activity-time">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                                            </div>
+                                            <p class="mb-1">تم توليد توصية "{{ activity.title }}" للأرض {{ activity.land_name }}.</p>
+                                            <a href="{{ url_for('lands.view', land_id=activity.land_id) }}#recommendations" class="text-decoration-none small">عرض التوصية</a>
+                                        </div>
+                                    {% elif activity.type == 'login' %}
+                                        <div class="activity-icon bg-success-subtle text-success">
+                                            <i class="fas fa-sign-in-alt"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-1">تسجيل الدخول</h6>
+                                                <span class="activity-time">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                                            </div>
+                                            <p class="mb-1">قمت بتسجيل الدخول إلى النظام من {{ activity.ip_address }}.</p>
+                                        </div>
+                                    {% elif activity.type == 'chat' %}
+                                        <div class="activity-icon bg-primary-subtle text-primary">
+                                            <i class="fas fa-comment"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-1">محادثة مع المساعد الذكي</h6>
+                                                <span class="activity-time">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                                            </div>
+                                            <p class="mb-1">قمت بإجراء محادثة مع المساعد الذكي حول "{{ activity.topic }}".</p>
+                                            <a href="{{ url_for('chatbot.history') }}" class="text-decoration-none small">عرض سجل المحادثات</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <h5>لا يوجد نشاط حتى الآن</h5>
+                            <p class="text-muted">ستظهر أنشطتك الأخيرة هنا بمجرد البدء في استخدام النظام.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Favorite Lands -->
+            {% if favorite_lands %}
+                <div class="card border-0 shadow-sm profile-card mt-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-star me-2"></i>الأراضي المفضلة
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for land in favorite_lands %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ land.name }}</h6>
+                                            <p class="card-text small text-muted">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ land.region }}, {{ land.city }}
+                                            </p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge {{ 'bg-success' if land.status == 'available' else 'bg-primary' if land.status == 'invested' else 'bg-warning text-dark' if land.status == 'under_development' else 'bg-secondary' }}">
+                                                    {{ land.status }}
+                                                </span>
+                                                <a href="{{ url_for('lands.view', land_id=land.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

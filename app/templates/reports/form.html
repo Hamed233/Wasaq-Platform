@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if report %}
+        u062au062du0631u064au0631 u062au0642u0631u064au0631 - u0648u0642u0627u0641
+    {% else %}
+        u0625u0636u0627u0641u0629 u062au0642u0631u064au0631 u062cu062fu064au062f - u0648u0642u0627u0641
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border-radius: 10px;
+    }
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    .ck-editor__editable {
+        min-height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Back button -->
+    <div class="mb-3">
+        <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>u0627u0644u0639u0648u062fu0629 u0625u0644u0649 u0642u0627u0626u0645u0629 u0627u0644u062au0642u0627u0631u064au0631
+        </a>
+    </div>
+    
+    <!-- Form Header -->
+    <div class="card border-0 shadow-sm mb-4 form-card">
+        <div class="card-header bg-white py-3">
+            <h5 class="card-title mb-0">
+                {% if report %}
+                    <i class="fas fa-edit me-2"></i>u062au062du0631u064au0631 u062au0642u0631u064au0631
+                {% else %}
+                    <i class="fas fa-plus-circle me-2"></i>u0625u0636u0627u0641u0629 u062au0642u0631u064au0631 u062cu062fu064au062f
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {{ form.csrf_token }}
+                
+                <!-- Basic Information -->
+                <h6 class="mb-3 text-primary">u0627u0644u0645u0639u0644u0648u0645u0627u062a u0627u0644u0623u0633u0627u0633u064au0629</h6>
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <label for="title" class="form-label required-field">u0639u0646u0648u0627u0646 u0627u0644u062au0642u0631u064au0631</label>
+                        {{ form.title(class="form-control", placeholder="u0623u062fu062eu0644 u0639u0646u0648u0627u0646 u0627u0644u062au0642u0631u064au0631") }}
+                        {% if form.title.errors %}
+                            <div class="text-danger">
+                                {% for error in form.title.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="report_type" class="form-label required-field">u0646u0648u0639 u0627u0644u062au0642u0631u064au0631</label>
+                        {{ form.report_type(class="form-select") }}
+                        {% if form.report_type.errors %}
+                            <div class="text-danger">
+                                {% for error in form.report_type.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="land_id" class="form-label required-field">u0627u0644u0623u0631u0636 u0627u0644u0645u062au0639u0644u0642u0629</label>
+                        {{ form.land_id(class="form-select") }}
+                        {% if form.land_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.land_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="status" class="form-label required-field">u062du0627u0644u0629 u0627u0644u062au0642u0631u064au0631</label>
+                        {{ form.status(class="form-select") }}
+                        {% if form.status.errors %}
+                            <div class="text-danger">
+                                {% for error in form.status.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Report Content -->
+                <h6 class="mb-3 text-primary">u0645u062du062au0648u0649 u0627u0644u062au0642u0631u064au0631</h6>
+                <div class="row mb-4">
+                    <div class="col-md-12 mb-3">
+                        <label for="content" class="form-label required-field">u0627u0644u0645u062du062au0648u0649</label>
+                        {{ form.content(class="form-control", rows=10, id="editor") }}
+                        {% if form.content.errors %}
+                            <div class="text-danger">
+                                {% for error in form.content.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Additional Information -->
+                <h6 class="mb-3 text-primary">u0645u0639u0644u0648u0645u0627u062a u0625u0636u0627u0641u064au0629</h6>
+                <div class="row mb-4">
+                    <div class="col-md-12 mb-3">
+                        <label for="tags" class="form-label">u0627u0644u0648u0633u0648u0645 (u0645u0641u0635u0648u0644u0629 u0628u0641u0648u0627u0635u0644)</label>
+                        {{ form.tags(class="form-control", placeholder="u0645u062bu0627u0644: u0645u0634u0631u0648u0639, u062au0637u0648u064au0631, u0627u0633u062au062bu0645u0627u0631") }}
+                        <small class="text-muted">u0623u062fu062eu0644 u0627u0644u0648u0633u0648u0645 u0645u0641u0635u0648u0644u0629 u0628u0641u0648u0627u0635u0644 u0644u062au0633u0647u064au0644 u0627u0644u0628u062du062b u0648u0627u0644u062au0635u0641u064au0629</small>
+                        {% if form.tags.errors %}
+                            <div class="text-danger">
+                                {% for error in form.tags.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label for="attachment" class="form-label">u0645u0631u0641u0642 u0627u0644u062au0642u0631u064au0631</label>
+                        {{ form.attachment(class="form-control") }}
+                        <small class="text-muted">u064au0645u0643u0646u0643 u0625u0631u0641u0627u0642 u0645u0644u0641 u0645u062bu0644 PDF u0623u0648 Excel u0623u0648 u0635u0648u0631u0629</small>
+                        {% if form.attachment.errors %}
+                            <div class="text-danger">
+                                {% for error in form.attachment.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        {% if report and report.attachment_path %}
+                            <div class="mt-2 p-2 bg-light rounded">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-paperclip me-2"></i>
+                                    <span>{{ report.attachment_filename }}</span>
+                                    <div class="ms-auto">
+                                        <a href="{{ url_for('reports.download_attachment', report_id=report.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <a href="{{ url_for('reports.remove_attachment', report_id=report.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('u0647u0644 u0623u0646u062a u0645u062au0623u0643u062f u0645u0646 u062du0630u0641 u0647u0630u0627 u0627u0644u0645u0631u0641u0642u061f')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Submit Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>u0625u0644u063au0627u0621
+                    </a>
+                    <div>
+                        {% if report and report.status == 'draft' %}
+                            <button type="submit" name="publish" value="1" class="btn btn-success me-2">
+                                <i class="fas fa-check-circle me-1"></i>u0646u0634u0631 u0627u0644u062au0642u0631u064au0631
+                            </button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            {% if report %}
+                                u062du0641u0638 u0627u0644u062au063au064au064au0631u0627u062a
+                            {% else %}
+                                u0625u0636u0627u0641u0629 u0627u0644u062au0642u0631u064au0631
+                            {% endif %}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.ckeditor.com/ckeditor5/35.1.0/classic/ckeditor.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize CKEditor for rich text editing
+        ClassicEditor
+            .create(document.querySelector('#editor'), {
+                language: 'ar',
+                toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'blockQuote', 'insertTable', 'undo', 'redo']
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    });
+</script>
+{% endblock %}

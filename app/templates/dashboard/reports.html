@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title_ar }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        border-radius: 10px;
+        transition: transform 0.3s;
+    }
+    .report-card:hover {
+        transform: translateY(-5px);
+    }
+    .report-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .report-tags .badge {
+        margin-right: 5px;
+    }
+    .filter-bar {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">{{ page_header_ar }}</h2>
+        <div>
+            <a href="{{ url_for('reports.add') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>{{ add_report_button_ar }}
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filter Bar -->
+    <div class="filter-bar mb-4">
+        <form method="get" action="{{ url_for('dashboard.reports') }}">
+            <div class="row align-items-end">
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <label for="type" class="form-label">{{ report_type_label_ar }}</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">{{ all_types_option_ar }}</option>
+                        {% for type_key in type_options %}
+                            <option value="{{ type_key }}" {% if selected_type == type_key %}selected{% endif %}>{{ type_options_ar.get(type_key, type_key) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <label for="status" class="form-label">{{ report_status_label_ar }}</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">{{ all_statuses_option_ar }}</option>
+                        {% for status_key in status_options %}
+                            <option value="{{ status_key }}" {% if selected_status == status_key %}selected{% endif %}>{{ status_options_ar.get(status_key, status_key) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <label for="land_id" class="form-label">{{ land_label_ar }}</label>
+                    <select class="form-select" id="land_id" name="land_id">
+                        <option value="">{{ all_lands_option_ar }}</option>
+                        {% for land in lands %}
+                            <option value="{{ land.id }}" {% if selected_land == land.id %}selected{% endif %}>{{ land.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i>{{ apply_filter_button_ar }}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Summary Charts -->
+    <div class="row mb-4">
+        <!-- Reports by Type -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>{{ reports_by_type_chart_title_ar }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="reportTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reports by Region -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>{{ reports_by_region_chart_title_ar }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="reportRegionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reports Timeline -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>{{ reports_timeline_chart_title_ar }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="reportTimelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Reports -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt me-2"></i>{{ recent_reports_title_ar }}
+                    </h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-download me-1"></i>{{ export_button_ar }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('reports.export_reports', format='csv') }}">CSV</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('reports.export_reports', format='excel') }}">Excel</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('reports.export_reports', format='pdf') }}">PDF</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reports %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>{{ report_title_column_ar }}</th>
+                                        <th>{{ report_type_column_ar }}</th>
+                                        <th>{{ report_status_column_ar }}</th>
+                                        <th>{{ report_land_column_ar }}</th>
+                                        <th>{{ report_author_column_ar }}</th>
+                                        <th>{{ report_date_column_ar }}</th>
+                                        <th>{{ report_actions_column_ar }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in reports %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('reports.view', report_id=report.id) }}" class="text-decoration-none">
+                                                    {{ report.title }}
+                                                </a>
+                                                {% if report.has_attachment %}
+                                                    <i class="fas fa-paperclip text-muted ms-1" title="{{ attachment_tooltip_ar }}"></i>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if report.report_type == 'status' %}
+                                                    <span class="badge bg-info">{{ report_type_status_ar }}</span>
+                                                {% elif report.report_type == 'project_update' %}
+                                                    <span class="badge bg-primary">{{ report_type_project_update_ar }}</span>
+                                                {% elif report.report_type == 'maintenance' %}
+                                                    <span class="badge bg-warning text-dark">{{ report_type_maintenance_ar }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ report.report_type }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if report.status == 'pending' %}
+                                                    <span class="badge bg-warning">{{ report_status_pending_ar }}</span>
+                                                {% elif report.status == 'approved' %}
+                                                    <span class="badge bg-success">{{ report_status_approved_ar }}</span>
+                                                {% elif report.status == 'rejected' %}
+                                                    <span class="badge bg-danger">{{ report_status_rejected_ar }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ report.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('lands.view', land_id=report.land.id) }}" class="text-decoration-none">
+                                                    {{ report.land.name|truncate(20) }}
+                                                </a>
+                                            </td>
+                                            <td>{{ report.author.username }}</td>
+                                            <td>{{ report.created_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('reports.view', report_id=report.id) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if current_user.is_admin() or current_user.id == report.author_id %}
+                                                        <a href="{{ url_for('reports.edit', report_id=report.id) }}" class="btn btn-sm btn-outline-secondary">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if pagination.pages > 1 %}
+                            <div class="pagination-container mt-4">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination">
+                                        {% if pagination.has_prev %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('dashboard.reports', page=pagination.prev_num, **request.args) }}" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <a class="page-link" href="#" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        
+                                        {% for page in pagination.iter_pages() %}
+                                            {% if page %}
+                                                {% if page != pagination.page %}
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="{{ url_for('dashboard.reports', page=page, **request.args) }}">{{ page }}</a>
+                                                    </li>
+                                                {% else %}
+                                                    <li class="page-item active">
+                                                        <a class="page-link" href="#">{{ page }}</a>
+                                                    </li>
+                                                {% endif %}
+                                            {% else %}
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" href="#">...</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if pagination.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('dashboard.reports', page=pagination.next_num, **request.args) }}" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <a class="page-link" href="#" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <h5>{{ no_reports_found_ar }}</h5>
+                            <p class="text-muted">{{ no_reports_found_message_ar }}</p>
+                            <a href="{{ url_for('reports.add') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-plus me-1"></i>{{ add_report_button_ar }}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Reports by Type Chart
+        const typeCtx = document.getElementById('reportTypeChart').getContext('2d');
+        new Chart(typeCtx, {
+            type: 'pie',
+            data: {
+                labels: {{ report_type_labels|tojson }},
+                datasets: [{
+                    data: {{ report_type_data|tojson }},
+                    backgroundColor: [
+                        'rgba(13, 202, 240, 0.7)', // status - info
+                        'rgba(13, 110, 253, 0.7)', // project_update - primary
+                        'rgba(255, 193, 7, 0.7)',  // maintenance - warning
+                        'rgba(108, 117, 125, 0.7)' // other - secondary
+                    ],
+                    borderColor: [
+                        'rgba(13, 202, 240, 1)',
+                        'rgba(13, 110, 253, 1)',
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(108, 117, 125, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+        
+        // Reports by Region Chart
+        const regionCtx = document.getElementById('reportRegionChart').getContext('2d');
+        new Chart(regionCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ report_region_labels|tojson }},
+                datasets: [{
+                    label: '{{ reports_by_region_chart_title_ar }}',
+                    data: {{ report_region_data|tojson }},
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Reports Timeline Chart
+        const timelineCtx = document.getElementById('reportTimelineChart').getContext('2d');
+        new Chart(timelineCtx, {
+            type: 'line',
+            data: {
+                labels: {{ report_timeline_labels|tojson }},
+                datasets: [{
+                    label: '{{ reports_timeline_chart_title_ar }}',
+                    data: {{ report_timeline_data|tojson }},
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

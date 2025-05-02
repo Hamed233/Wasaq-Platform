@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+
+{% block title %}قائمة الأراضي الوقفية - وقاف{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        border-radius: 10px;
+    }
+    .land-card {
+        transition: transform 0.3s;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .land-card:hover {
+        transform: translateY(-5px);
+    }
+    .land-card .card-img-top {
+        height: 180px;
+        object-fit: cover;
+    }
+    .land-card .card-status {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1;
+    }
+    .land-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    .land-stat {
+        text-align: center;
+        padding: 5px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        flex: 1;
+        margin: 0 2px;
+    }
+    .land-stat-value {
+        font-weight: bold;
+        color: #0d6efd;
+        font-size: 0.9rem;
+    }
+    .land-stat-label {
+        font-size: 0.7rem;
+        color: #6c757d;
+    }
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Filters -->
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm filter-card">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>تصفية الأراضي الوقفية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="filter-form" method="get" action="{{ url_for('lands.index') }}">
+                        <div class="mb-3">
+                            <label for="search" class="form-label">بحث</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="search" name="search" value="{{ request.args.get('search', '') }}" placeholder="ابحث عن اسم أو موقع...">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="region" class="form-label">المنطقة</label>
+                            <select class="form-select" id="region" name="region">
+                                <option value="">جميع المناطق</option>
+                                {% for region in regions %}
+                                <option value="{{ region }}" {% if request.args.get('region') == region %}selected{% endif %}>
+                                    {{ region }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="type" class="form-label">نوع الأرض</label>
+                            <select class="form-select" id="type" name="type">
+                                <option value="">جميع الأنواع</option>
+                                {% for land_type in land_types %}
+                                <option value="{{ land_type }}" {% if request.args.get('type') == land_type %}selected{% endif %}>
+                                    {{ land_type }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">الحالة</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">جميع الحالات</option>
+                                {% for status_option in statuses %}
+                                <option value="{{ status_option }}" {% if request.args.get('status') == status_option %}selected{% endif %}>
+                                    {{ status_option }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="min_area" class="form-label">المساحة (متر مربع)</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="min_area" name="min_area" value="{{ request.args.get('min_area', '') }}" placeholder="من">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="max_area" name="max_area" value="{{ request.args.get('max_area', '') }}" placeholder="إلى">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="min_return" class="form-label">العائد السنوي (%)</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="min_return" name="min_return" value="{{ request.args.get('min_return', '') }}" placeholder="من">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="max_return" name="max_return" value="{{ request.args.get('max_return', '') }}" placeholder="إلى">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>طبق التصفية
+                            </button>
+                            <a href="{{ url_for('lands.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-2"></i>إعادة ضبط
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Stats Summary -->
+            <div class="card border-0 shadow-sm filter-card mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>ملخص الإحصاءات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>عدد الأراضي:</span>
+                            <strong>{{ pagination.total }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>إجمالي المساحة:</span>
+                            <strong>{{ '{:,.0f}'.format(total_area) }} متر مربع</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>متوسط العائد:</span>
+                            <strong>{{ '{:.1f}'.format(avg_return) }}%</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ status_percentages.available }}%" aria-valuenow="{{ status_percentages.available }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ status_percentages.available }}%
+                            </div>
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ status_percentages.invested }}%" aria-valuenow="{{ status_percentages.invested }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ status_percentages.invested }}%
+                            </div>
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ status_percentages.under_development }}%" aria-valuenow="{{ status_percentages.under_development }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ status_percentages.under_development }}%
+                            </div>
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ status_percentages.other }}%" aria-valuenow="{{ status_percentages.other }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ status_percentages.other }}%
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>متاحة: {{ status_counts.available }}</span>
+                            <span>مستثمرة: {{ status_counts.invested }}</span>
+                            <span>قيد التطوير: {{ status_counts.under_development }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Lands List -->
+        <div class="col-md-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0 d-inline-block">
+                            <i class="fas fa-map-marked-alt me-2"></i>الأراضي الوقفية
+                        </h5>
+                        {% if request.args %}
+                        <span class="badge bg-primary ms-2">نتائج البحث</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{{ url_for('lands.map_view') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-map me-1"></i>عرض الخريطة
+                        </a>
+                        {% if current_user.is_admin() %}
+                        <a href="{{ url_for('lands.add') }}" class="btn btn-primary btn-sm ms-2">
+                            <i class="fas fa-plus me-1"></i>إضافة أرض جديدة
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if lands %}
+                        <div class="row">
+                            {% for land in lands %}
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-0 shadow-sm h-100 land-card">
+                                        <div class="card-status">
+                                            {% if land.status == 'available' %}
+                                                <span class="badge bg-success">متاحة للأسكان</span>
+                                            {% elif land.status == 'invested' %}
+                                                <span class="badge bg-primary">قيد الاستثمار</span>
+                                            {% elif land.status == 'under_development' %}
+                                                <span class="badge bg-warning text-dark">قيد التطوير</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ land.status }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="bg-light card-img-top d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-map-marker-alt fa-3x text-muted"></i>
+                                        </div>
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ land.name }}</h5>
+                                            <p class="card-text text-muted small mb-3">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ land.region }}, {{ land.city }}
+                                            </p>
+                                            
+                                            <div class="land-stats">
+                                                <div class="land-stat">
+                                                    <div class="land-stat-value">{{ '{:,.0f}'.format(land.area) }} متر مربع</div>
+                                                    <div class="land-stat-label">المساحة</div>
+                                                </div>
+                                                <div class="land-stat">
+                                                    <div class="land-stat-value">{{ land.annual_return }}%</div>
+                                                    <div class="land-stat-label">العائد</div>
+                                                </div>
+                                                <div class="land-stat">
+                                                    <div class="land-stat-value">{{ land.land_type }}</div>
+                                                    <div class="land-stat-label">النوع</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <p class="card-text small mb-3">
+                                                {{ land.description|truncate(100) }}
+                                            </p>
+                                        </div>
+                                        <div class="card-footer bg-white border-0">
+                                            <div class="d-grid">
+                                                <a href="{{ url_for('lands.view', land_id=land.id) }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye me-1"></i>عرض التفاصيل
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if pagination.pages > 1 %}
+                            <div class="pagination-container mt-4">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination">
+                                        {% if pagination.has_prev %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('lands.index', page=pagination.prev_num, **request.args) }}" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <a class="page-link" href="#" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        
+                                        {% for page in pagination.iter_pages() %}
+                                            {% if page %}
+                                                {% if page != pagination.page %}
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="{{ url_for('lands.index', page=page, **request.args) }}">{{ page }}</a>
+                                                    </li>
+                                                {% else %}
+                                                    <li class="page-item active">
+                                                        <a class="page-link" href="#">{{ page }}</a>
+                                                    </li>
+                                                {% endif %}
+                                            {% else %}
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" href="#">...</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if pagination.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('lands.index', page=pagination.next_num, **request.args) }}" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <a class="page-link" href="#" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>لم يتم العثور على أراضي وقفية</h5>
+                            <p class="text-muted">لم يتم العثور على أي أراضي وقفية تطابق معايير البحث الخاصة بك.</p>
+                            <a href="{{ url_for('lands.index') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-redo me-1"></i>إعادة ضبط التصفية
+                            </a>
+                            {% if current_user.is_admin() %}
+                            <a href="{{ url_for('lands.add') }}" class="btn btn-outline-primary mt-2 ms-2">
+                                <i class="fas fa-plus me-1"></i>إضافة أرض جديدة
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

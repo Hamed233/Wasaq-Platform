@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ land.name }} - وقاف{% endblock %}
+
+{% block extra_css %}
+<style>
+    .land-header {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+    }
+    .land-stats {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    .land-stat {
+        padding: 15px;
+        text-align: center;
+        border-right: 1px solid #f0f0f0;
+    }
+    .land-stat:last-child {
+        border-right: none;
+    }
+    .land-stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+    .land-stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .land-map {
+        height: 300px;
+        border-radius: 10px;
+    }
+    .recommendation-card {
+        transition: transform 0.3s;
+    }
+    .recommendation-card:hover {
+        transform: translateY(-5px);
+    }
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #6c757d;
+    }
+    .nav-tabs .nav-link.active {
+        border-bottom: 3px solid #0d6efd;
+        color: #0d6efd;
+        background-color: transparent;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Back button -->
+    <div class="mb-3">
+        <a href="{{ url_for('lands.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>العودة إلى قائمة الأراضي
+        </a>
+    </div>
+    
+    <!-- Land Header -->
+    <div class="land-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">{{ land.name }}</h1>
+                <p class="mb-3">
+                    <i class="fas fa-map-marker-alt me-2"></i>{{ land.region }}, {{ land.city }}, {{ land.district }}
+                </p>
+                <p class="mb-0">{{ land.description }}</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('lands.edit', land_id=land.id) }}" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-edit me-1"></i>تعدير
+                </a>
+                <a href="{{ url_for('lands.generate_recommendations', land_id=land.id) }}" class="btn btn-primary">
+                    <i class="fas fa-lightbulb me-1"></i>توليد توصيات
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Land Stats -->
+    <div class="row land-stats mb-4">
+        <div class="col-md-3 land-stat">
+            <div class="land-stat-value">{{ '{:,.0f}'.format(land.area) }} م²</div>
+            <div class="land-stat-label">المساحة</div>
+        </div>
+        <div class="col-md-3 land-stat">
+            <div class="land-stat-value">{{ land.annual_return }}%</div>
+            <div class="land-stat-label">العائد السنوي</div>
+        </div>
+        <div class="col-md-3 land-stat">
+            <div class="land-stat-value">{{ land.occupancy_rate }}%</div>
+            <div class="land-stat-label">معدل الإشغال</div>
+        </div>
+        <div class="col-md-3 land-stat">
+            <div class="land-stat-value">{{ '{:,.0f}'.format(land.yearly_income) }} ريال</div>
+            <div class="land-stat-label">الدخل السنوي</div>
+        </div>
+    </div>
+    
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-4" id="landTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
+                <i class="fas fa-info-circle me-2"></i>التفاصيل
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations" type="button" role="tab" aria-controls="recommendations" aria-selected="false">
+                <i class="fas fa-lightbulb me-2"></i>التوصيات
+                <span class="badge bg-primary ms-1">{{ recommendations|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab" aria-controls="reports" aria-selected="false">
+                <i class="fas fa-file-alt me-2"></i>التقارير
+                <span class="badge bg-primary ms-1">{{ reports|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="statistics-tab" data-bs-toggle="tab" data-bs-target="#statistics" type="button" role="tab" aria-controls="statistics" aria-selected="false">
+                <i class="fas fa-chart-bar me-2"></i>الإحصاءات
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Tabs Content -->
+    <div class="tab-content" id="landTabsContent">
+        <!-- Details Tab -->
+        <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>معلومات الأرض
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <th width="40%">المنطقة</th>
+                                        <td>{{ land.region }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>المحافظة</th>
+                                        <td>{{ land.city }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>الحي</th>
+                                        <td>{{ land.district }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>العنوان</th>
+                                        <td>{{ land.address }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>نوع الأرض</th>
+                                        <td>{{ land.land_type }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>الحالة</th>
+                                        <td>
+                                            {% if land.status == 'available' %}
+                                                <span class="badge bg-success">متاحة للاستثمار</span>
+                                            {% elif land.status == 'invested' %}
+                                                <span class="badge bg-primary">قيد الاستثمار</span>
+                                            {% elif land.status == 'under_development' %}
+                                                <span class="badge bg-warning text-dark">قيد التطوير</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ land.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>تاريخ الإضافة</th>
+                                        <td>{{ land.created_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>آخر تحديث</th>
+                                        <td>{{ land.updated_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-map-marked-alt me-2"></i>موقع الأرض
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="land-map" class="land-map"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recommendations Tab -->
+        <div class="tab-pane fade" id="recommendations" role="tabpanel" aria-labelledby="recommendations-tab">
+            <div class="row">
+                {% if recommendations %}
+                    {% for recommendation in recommendations %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm h-100 recommendation-card">
+                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">{{ recommendation.title }}</h5>
+                                    {% if recommendation.priority == 'high' %}
+                                        <span class="badge bg-danger">عالية</span>
+                                    {% elif recommendation.priority == 'medium' %}
+                                        <span class="badge bg-warning text-dark">متوسطة</span>
+                                    {% else %}
+                                        <span class="badge bg-info">منخفضة</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <p>{{ recommendation.description }}</p>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-md-4 mb-2 mb-md-0">
+                                            <div class="bg-light p-2 rounded text-center">
+                                                <div class="fw-bold">{{ '{:,.0f}'.format(recommendation.estimated_cost) }} ريال</div>
+                                                <small class="text-muted">التكلفة المقدرة</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-2 mb-md-0">
+                                            <div class="bg-light p-2 rounded text-center">
+                                                <div class="fw-bold">{{ recommendation.estimated_return }}%</div>
+                                                <small class="text-muted">العائد المقدر</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="bg-light p-2 rounded text-center">
+                                                <div class="fw-bold">{{ recommendation.estimated_timeframe }} شهر</div>
+                                                <small class="text-muted">المدة الزمنية المقدرة</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge bg-secondary me-2">{{ recommendation.recommendation_type }}</span>
+                                            <small class="text-muted">نسبة الثقة: {{ '{:.0f}'.format(recommendation.confidence_score * 100) }}%</small>
+                                        </div>
+                                        <div>
+                                            <span class="text-muted small">{{ recommendation.created_at.strftime('%Y-%m-%d') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-white border-0">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <span class="badge {% if recommendation.status == 'pending' %}bg-warning text-dark{% elif recommendation.status == 'approved' %}bg-success{% elif recommendation.status == 'rejected' %}bg-danger{% elif recommendation.status == 'implemented' %}bg-info{% endif %}">
+                                                {% if recommendation.status == 'pending' %}
+                                                    قيد المراجعة
+                                                {% elif recommendation.status == 'approved' %}
+                                                    موافق عليها
+                                                {% elif recommendation.status == 'rejected' %}
+                                                    مرفوضة
+                                                {% elif recommendation.status == 'implemented' %}
+                                                    قيد التنفيذ
+                                                {% else %}
+                                                    {{ recommendation.status }}
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        {% if current_user.is_admin() %}
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                الإجراءات
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="#">الموافقة</a></li>
+                                                <li><a class="dropdown-item" href="#">الرفض</a></li>
+                                                <li><a class="dropdown-item" href="#">وضع قيد التنفيذ</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#">حذف</a></li>
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>لا توجد توصيات لهذه الأرض حالياً.
+                            {% if current_user.is_admin() %}
+                            <a href="{{ url_for('lands.generate_recommendations', land_id=land.id) }}" class="alert-link">اضغط هنا</a> ل توليد توصيات جديدة.
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Reports Tab -->
+        <div class="tab-pane fade" id="reports" role="tabpanel" aria-labelledby="reports-tab">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt me-2"></i>تقارير الأرض
+                    </h5>
+                    <a href="{{ url_for('reports.add') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>إضافة تقرير
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if reports %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>العنوان</th>
+                                        <th>النوع</th>
+                                        <th>الحالة</th>
+                                        <th>الكاتب</th>
+                                        <th>التاريخ</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in reports %}
+                                        <tr>
+                                            <td>{{ report.title }}</td>
+                                            <td>
+                                                {% if report.report_type == 'status' %}
+                                                    <span class="badge bg-info">حالة</span>
+                                                {% elif report.report_type == 'project_update' %}
+                                                    <span class="badge bg-primary">تحديث مشروع</span>
+                                                {% elif report.report_type == 'maintenance' %}
+                                                    <span class="badge bg-warning text-dark">صيانة</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ report.report_type }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if report.status == 'draft' %}
+                                                    <span class="badge bg-secondary">مسودة</span>
+                                                {% elif report.status == 'published' %}
+                                                    <span class="badge bg-success">منشور</span>
+                                                {% elif report.status == 'archived' %}
+                                                    <span class="badge bg-dark">مؤرشف</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ report.author.username }}</td>
+                                            <td>{{ report.created_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                <a href="{{ url_for('reports.view', report_id=report.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <p>لا توجد تقارير لهذه الأرض حالياً.</p>
+                            <a href="{{ url_for('reports.add') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>إضافة تقرير جديد
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Tab -->
+        <div class="tab-pane fade" id="statistics" role="tabpanel" aria-labelledby="statistics-tab">
+            <div class="row">
+                {% if statistics %}
+                    {% for category, stats in statistics.items() %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white py-3">
+                                    <h5 class="card-title mb-0">
+                                        {% if category == 'financial' %}
+                                            <i class="fas fa-dollar-sign me-2"></i>الإحصاءات المالية
+                                        {% elif category == 'usage' %}
+                                            <i class="fas fa-chart-pie me-2"></i>إحصاءات الاستخدام
+                                        {% elif category == 'demographic' %}
+                                            <i class="fas fa-users me-2"></i>الإحصاءات السكانية
+                                        {% else %}
+                                            <i class="fas fa-chart-bar me-2"></i>{{ category }}
+                                        {% endif %}
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chart-{{ category }}"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>لا توجد إحصاءات لهذه الأرض حالياً.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize land map
+        const landMap = L.map('land-map').setView([{{ land.latitude }}, {{ land.longitude }}], 15);
+        
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(landMap);
+        
+        // Add marker for land location
+        const marker = L.marker([{{ land.latitude }}, {{ land.longitude }}]).addTo(landMap);
+        marker.bindPopup("<b>{{ land.name }}</b><br>{{ land.address }}").openPopup();
+        
+        {% if statistics %}
+            // Initialize charts for each statistic category
+            {% for category, stats in statistics.items() %}
+                const ctx{{ category }} = document.getElementById('chart-{{ category }}').getContext('2d');
+                
+                // Prepare data for chart
+                const labels{{ category }} = [{% for stat in stats %}'{{ stat.name }}',{% endfor %}];
+                const values{{ category }} = [{% for stat in stats %}{{ stat.value }},{% endfor %}];
+                
+                // Create chart
+                new Chart(ctx{{ category }}, {
+                    type: 'bar',
+                    data: {
+                        labels: labels{{ category }},
+                        datasets: [{
+                            label: '{{ category }}',
+                            data: values{{ category }},
+                            backgroundColor: [
+                                'rgba(13, 110, 253, 0.7)',
+                                'rgba(25, 135, 84, 0.7)',
+                                'rgba(255, 193, 7, 0.7)',
+                                'rgba(220, 53, 69, 0.7)',
+                                'rgba(13, 202, 240, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(13, 110, 253, 1)',
+                                'rgba(25, 135, 84, 1)',
+                                'rgba(255, 193, 7, 1)',
+                                'rgba(220, 53, 69, 1)',
+                                'rgba(13, 202, 240, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            {% endfor %}
+        {% endif %}
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+
+{% block title %}التوصيات الذكية - وقاف{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recommendation-card {
+        border-radius: 10px;
+        transition: transform 0.3s;
+    }
+    .recommendation-card:hover {
+        transform: translateY(-5px);
+    }
+    .recommendation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .recommendation-metrics {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    .recommendation-metric {
+        flex: 1;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+    }
+    .metric-value {
+        font-weight: bold;
+        color: #0d6efd;
+        font-size: 1.1rem;
+    }
+    .metric-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .filter-bar {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .confidence-indicator {
+        width: 100%;
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        margin-top: 5px;
+        overflow: hidden;
+    }
+    .confidence-bar {
+        height: 100%;
+        border-radius: 4px;
+    }
+    .confidence-high {
+        background-color: #198754;
+    }
+    .confidence-medium {
+        background-color: #ffc107;
+    }
+    .confidence-low {
+        background-color: #dc3545;
+    }
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">التوصيات الذكية</h2>
+        <div>
+            <a href="{{ url_for('dashboard.generate_recommendations') }}" class="btn btn-primary">
+                <i class="fas fa-lightbulb me-1"></i>توليد توصيات جديدة
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filter Bar -->
+    <div class="filter-bar mb-4">
+        <form method="get" action="{{ url_for('dashboard.recommendations') }}">
+            <div class="row align-items-end">
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <label for="land_id" class="form-label">الأرض</label>
+                    <select class="form-select" id="land_id" name="land_id">
+                        <option value="">جميع الأراضي</option>
+                        {% for land in lands %}
+                            <option value="{{ land.id }}" {% if land_id == land.id %}selected{% endif %}>{{ land.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <label for="region" class="form-label">المنطقة</label>
+                    <select class="form-select" id="region" name="region">
+                        <option value="">جميع المناطق</option>
+                        {% for r in regions %}
+                            <option value="{{ r }}" {% if region == r %}selected{% endif %}>{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <label for="type" class="form-label">نوع التوصية</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">جميع الأنواع</option>
+                        {% for type_key in type_options %}
+                            <option value="{{ type_key }}" {% if selected_type == type_key %}selected{% endif %}>{{ type_options_ar.get(type_key, type_key) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <label for="priority" class="form-label">الأولوية</label>
+                    <select class="form-select" id="priority" name="priority">
+                        <option value="">جميع الأولويات</option>
+                        {% for priority_key in priority_options %}
+                            <option value="{{ priority_key }}" {% if selected_priority == priority_key %}selected{% endif %}>{{ priority_options_ar.get(priority_key, priority_key) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <label for="status" class="form-label">الحالة</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">جميع الحالات</option>
+                        {% for status_key in status_options %}
+                            <option value="{{ status_key }}" {% if selected_status == status_key %}selected{% endif %}>{{ status_options_ar.get(status_key, status_key) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3 mb-md-0">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i>تطبيق التصفية
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">إجمالي التوصيات</h5>
+                    <div class="d-flex align-items-center mt-3">
+                        <h2 class="mb-0 me-2">{{ total_recommendations }}</h2>
+                        <small class="text-muted">توصية</small>
+                    </div>
+                    <div class="progress mt-3" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">التوصيات المعلقة</h5>
+                    <div class="d-flex align-items-center mt-3">
+                        <h2 class="mb-0 me-2">{{ pending_count }}</h2>
+                        <small class="text-muted">توصية</small>
+                    </div>
+                    <div class="progress mt-3" style="height: 10px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ (pending_count / total_recommendations * 100) if total_recommendations > 0 else 0 }}%" aria-valuenow="{{ (pending_count / total_recommendations * 100) if total_recommendations > 0 else 0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">التوصيات المعتمدة</h5>
+                    <div class="d-flex align-items-center mt-3">
+                        <h2 class="mb-0 me-2">{{ approved_count }}</h2>
+                        <small class="text-muted">توصية</small>
+                    </div>
+                    <div class="progress mt-3" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ (approved_count / total_recommendations * 100) if total_recommendations > 0 else 0 }}%" aria-valuenow="{{ (approved_count / total_recommendations * 100) if total_recommendations > 0 else 0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">متوسط العائد المتوقع</h5>
+                    <div class="d-flex align-items-center mt-3">
+                        <h2 class="mb-0 me-2">{{ '{:.1f}'.format(avg_expected_return) }}%</h2>
+                        <small class="text-muted">عائد سنوي</small>
+                    </div>
+                    <div class="progress mt-3" style="height: 10px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ avg_expected_return }}%" aria-valuenow="{{ avg_expected_return }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recommendations List -->
+    <div class="row">
+        {% if recommendations %}
+            {% for recommendation in recommendations %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100 recommendation-card">
+                        <div class="card-header bg-white py-3">
+                            <div class="recommendation-header">
+                                <h5 class="card-title mb-0">{{ recommendation.title }}</h5>
+                                {% if recommendation.priority == 'high' %}
+                                    <span class="badge bg-danger">عالي</span>
+                                {% elif recommendation.priority == 'medium' %}
+                                    <span class="badge bg-warning text-dark">متوسط</span>
+                                {% else %}
+                                    <span class="badge bg-info">منخفض</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ recommendation.land.name }}
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-tag me-1"></i>{{ recommendation.recommendation_type }}
+                                </small>
+                            </div>
+                            
+                            <p class="card-text">{{ recommendation.description|truncate(150) }}</p>
+                            
+                            <div class="recommendation-metrics">
+                                <div class="recommendation-metric">
+                                    <div class="metric-value">{{ '{:,.0f}'.format(recommendation.estimated_cost) }}</div>
+                                    <div class="metric-label">التكلفة (ريال)</div>
+                                </div>
+                                <div class="recommendation-metric">
+                                    <div class="metric-value">{{ recommendation.estimated_return }}%</div>
+                                    <div class="metric-label">العائد المتوقع</div>
+                                </div>
+                                <div class="recommendation-metric">
+                                    <div class="metric-value">{{ recommendation.estimated_timeframe }}</div>
+                                    <div class="metric-label">المدة (شهر)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <small class="text-muted">نسبة الثقة: {{ '{:.0f}'.format(recommendation.confidence_score * 100) }}%</small>
+                                <div class="confidence-indicator">
+                                    <div class="confidence-bar {{ 'confidence-high' if recommendation.confidence_score >= 0.7 else 'confidence-medium' if recommendation.confidence_score >= 0.4 else 'confidence-low' }}" style="width: {{ recommendation.confidence_score * 100 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge {{ 'bg-warning text-dark' if recommendation.status == 'pending' else 'bg-success' if recommendation.status == 'approved' else 'bg-danger' if recommendation.status == 'rejected' else 'bg-info' }}">
+                                    {% if recommendation.status == 'pending' %}
+                                        قيد الانظار
+                                    {% elif recommendation.status == 'approved' %}
+                                        معتمدة
+                                    {% elif recommendation.status == 'rejected' %}
+                                        مرفوضة
+                                    {% elif recommendation.status == 'implemented' %}
+                                        تم التنفيذ
+                                    {% endif %}
+                                </span>
+                                <div>
+                                    <a href="{{ url_for('lands.view', land_id=recommendation.land_id) }}#recommendations" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if current_user.is_admin() %}
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-cog"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                {% if recommendation.status == 'pending' %}
+                                                    <li><a class="dropdown-item" href="{{ url_for('dashboard.update_recommendation_status', recommendation_id=recommendation.id, status='approved') }}">الموافقة</a></li>
+                                                    <li><a class="dropdown-item" href="{{ url_for('dashboard.update_recommendation_status', recommendation_id=recommendation.id, status='rejected') }}">الرفض</a></li>
+                                                {% elif recommendation.status == 'approved' %}
+                                                    <li><a class="dropdown-item" href="{{ url_for('dashboard.update_recommendation_status', recommendation_id=recommendation.id, status='implemented') }}">وضع قيد التنفيذ</a></li>
+                                                {% endif %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="{{ url_for('dashboard.delete_recommendation', recommendation_id=recommendation.id) }}" onclick="return confirm('هل أنت متأكد من حذف هذه التوصية؟')">حذف</a></li>
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+                <div class="col-12">
+                    <div class="pagination-container mt-2">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                {% if pagination.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('dashboard.recommendations', page=pagination.prev_num, **request.args) }}" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page in pagination.iter_pages() %}
+                                    {% if page %}
+                                        {% if page != pagination.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('dashboard.recommendations', page=page, **request.args) }}">{{ page }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <a class="page-link" href="#">{{ page }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#">...</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if pagination.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('dashboard.recommendations', page=pagination.next_num, **request.args) }}" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-lightbulb fa-3x text-muted mb-3"></i>
+                        <h5>لم يتم العثور على أي توصيات</h5>
+                        <p class="text-muted">لم يتم العثور على أي توصيات مطابقة للمعايير المحددة.</p>
+                        <a href="{{ url_for('dashboard.generate_recommendations') }}" class="btn btn-primary mt-2">
+                            <i class="fas fa-lightbulb me-1"></i>توليد توصيات جديدة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

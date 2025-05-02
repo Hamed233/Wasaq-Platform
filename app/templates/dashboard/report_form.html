@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if action == 'add' %}
+        {{ title_ar }}
+    {% else %}
+        تعديل التقرير
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border-radius: 10px;
+    }
+    .ck-editor__editable {
+        min-height: 300px;
+    }
+    .attachment-preview {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+    }
+    .attachment-preview i {
+        font-size: 24px;
+        margin-right: 10px;
+        color: #6c757d;
+    }
+    .attachment-preview .attachment-name {
+        flex-grow: 1;
+    }
+    .attachment-preview .attachment-actions {
+        display: flex;
+        gap: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            {% if action == 'add' %}
+                {{ title_ar }}
+            {% else %}
+                تعديل التقرير: {{ report.title }}
+            {% endif %}
+        </h2>
+        <div>
+            <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-1"></i>العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+    
+    <!-- Report Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm form-card">
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" id="reportForm">
+                        <!-- Report Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">{{ form_title_label_ar }} <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required 
+                                {% if action == 'edit' %}value="{{ report.title }}"{% endif %}>
+                        </div>
+                        
+                        <!-- Report Type -->
+                        <div class="mb-3">
+                            <label for="report_type" class="form-label">{{ form_type_label_ar }} <span class="text-danger">*</span></label>
+                            <select class="form-select" id="report_type" name="report_type" required>
+                                <option value="" selected disabled>-- اختر نوع التقرير --</option>
+                                <option value="status" {% if action == 'edit' and report.report_type == 'status' %}selected{% endif %}>تقرير حالة</option>
+                                <option value="project_update" {% if action == 'edit' and report.report_type == 'project_update' %}selected{% endif %}>تحديث مشروع</option>
+                                <option value="maintenance" {% if action == 'edit' and report.report_type == 'maintenance' %}selected{% endif %}>تقرير صيانة</option>
+                                <option value="inspection" {% if action == 'edit' and report.report_type == 'inspection' %}selected{% endif %}>تقرير تفتيش</option>
+                                <option value="financial" {% if action == 'edit' and report.report_type == 'financial' %}selected{% endif %}>تقرير مالي</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Report Status -->
+                        <div class="mb-3">
+                            <label for="status" class="form-label">{{ form_status_label_ar }}</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="draft" {% if action == 'edit' and report.status == 'draft' %}selected{% endif %}>مسودة</option>
+                                <option value="published" {% if action == 'edit' and report.status == 'published' %}selected{% endif %}>منشور</option>
+                                <option value="archived" {% if action == 'edit' and report.status == 'archived' %}selected{% endif %}>مؤرشف</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Associated Land -->
+                        <div class="mb-3">
+                            <label for="land_id" class="form-label">{{ form_land_label_ar }} <span class="text-danger">*</span></label>
+                            <select class="form-select" id="land_id" name="land_id" required>
+                                <option value="" selected disabled>-- اختر الأرض --</option>
+                                {% for land in lands %}
+                                <option value="{{ land.id }}" {% if action == 'edit' and report.land_id == land.id %}selected{% endif %}>
+                                    {{ land.name }} ({{ land.region }} - {{ land.city }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Report Content -->
+                        <div class="mb-3">
+                            <label for="content" class="form-label">{{ form_content_label_ar }} <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="content" name="content" rows="10" required>{% if action == 'edit' %}{{ report.content }}{% endif %}</textarea>
+                        </div>
+                        
+                        <!-- Tags -->
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">{{ form_tags_label_ar }}</label>
+                            <input type="text" class="form-control" id="tags" name="tags" placeholder="أدخل الوسوم مفصولة بفواصل" 
+                                {% if action == 'edit' and report.tags %}value="{{ report.tags }}"{% endif %}>
+                            <div class="form-text">أدخل الوسوم مفصولة بفواصل (مثال: تطوير, استثمار, صيانة)</div>
+                        </div>
+                        
+                        <!-- Attachments -->
+                        <div class="mb-3">
+                            <label for="attachments" class="form-label">{{ form_attachments_label_ar }}</label>
+                            <input type="file" class="form-control" id="attachments" name="attachments" multiple>
+                            <div class="form-text">يمكنك تحميل ملفات متعددة (PDF، صور، مستندات)</div>
+                        </div>
+                        
+                        {% if action == 'edit' and attachments %}
+                        <!-- Existing Attachments -->
+                        <div class="mb-4">
+                            <label class="form-label">المرفقات الحالية</label>
+                            <div id="existing-attachments">
+                                {% for attachment in attachments %}
+                                <div class="attachment-preview">
+                                    <i class="fas fa-file"></i>
+                                    <div class="attachment-name">{{ attachment.filename }}</div>
+                                    <div class="attachment-actions">
+                                        <a href="#" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="removeAttachment('{{ attachment.filename }}')"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>{{ form_cancel_button_ar }}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>{{ form_submit_button_ar }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.ckeditor.com/ckeditor5/35.0.1/classic/ckeditor.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize rich text editor
+        ClassicEditor
+            .create(document.querySelector('#content'), {
+                toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
+                language: 'ar'
+            })
+            .catch(error => {
+                console.error(error);
+            });
+        
+        {% if action == 'edit' %}
+        // Function to remove attachment
+        window.removeAttachment = function(filename) {
+            if (confirm('هل أنت متأكد من رغبتك في حذف هذا المرفق؟')) {
+                // In a real app, you would make an AJAX call to delete the attachment
+                // For now, just remove from the UI
+                const attachmentElement = event.target.closest('.attachment-preview');
+                attachmentElement.remove();
+            }
+        };
+        {% endif %}
+    });
+</script>
+{% endblock %}

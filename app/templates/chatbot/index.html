@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+
+{% block title %}المساعد الذكي - وقاف{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        height: calc(100vh - 250px);
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 10px 10px 0 0;
+    }
+    .chat-input {
+        background-color: #fff;
+        border-radius: 0 0 10px 10px;
+        padding: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+    .message {
+        margin-bottom: 15px;
+        display: flex;
+    }
+    .message.user {
+        justify-content: flex-end;
+    }
+    .message.bot {
+        justify-content: flex-start;
+    }
+    .message-content {
+        padding: 10px 15px;
+        border-radius: 18px;
+        max-width: 75%;
+        position: relative;
+    }
+    .message.user .message-content {
+        background-color: #0d6efd;
+        color: white;
+        border-bottom-right-radius: 5px;
+    }
+    .message.bot .message-content {
+        background-color: #e9ecef;
+        color: #212529;
+        border-bottom-left-radius: 5px;
+    }
+    .message-time {
+        font-size: 0.7rem;
+        color: #6c757d;
+        margin-top: 5px;
+        text-align: right;
+    }
+    .bot-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+    }
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #6c757d;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+    }
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .typing-indicator .dot {
+        width: 8px;
+        height: 8px;
+        background-color: #6c757d;
+        border-radius: 50%;
+        margin: 0 2px;
+        animation: typing 1.5s infinite ease-in-out;
+    }
+    .typing-indicator .dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    .typing-indicator .dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    @keyframes typing {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0); }
+    }
+    .chat-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .chat-suggestion {
+        background-color: #f0f0f0;
+        border: 1px solid #e0e0e0;
+        border-radius: 20px;
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .chat-suggestion:hover {
+        background-color: #e0e0e0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>حول المساعد الذكي
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>مساعد وقاف الذكي هو نظام محادثة آلي مدعوم بالذكاء الاصطناعي لمساعدتك في:</p>
+                    <ul>
+                        <li>الإجابة على الأسئلة المتعلقة بالأراضي الوقفية</li>
+                        <li>تقديم معلومات عن فرص الاستثمار المتاحة</li>
+                        <li>شرح إجراءات الاستثمار والتطوير</li>
+                        <li>توفير إحصائيات وتقارير عن الأوقاف</li>
+                        <li>المساعدة في استخدام منصة وقاف</li>
+                    </ul>
+                    <p>يمكنك طرح أسئلتك باللغة العربية وسيقوم المساعد بالرد عليك في أسرع وقت.</p>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button id="clear-chat-btn" class="btn btn-outline-secondary">
+                            <i class="fas fa-trash me-2"></i>مسح المحادثة
+                        </button>
+                        <a href="{{ url_for('chatbot.history') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-history me-2"></i>سجل المحادثات
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-robot me-2"></i>المساعد الذكي - وقاف
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages">
+                            <!-- Welcome message -->
+                            <div class="message bot">
+                                <div class="bot-avatar">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div>
+                                    <div class="message-content">
+                                        مرحباً بك في مساعد وقاف الذكي! كيف يمكنني مساعدتك اليوم؟
+                                    </div>
+                                    <div class="message-time">{{ now.strftime('%H:%M') }}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Chat history will be loaded here -->
+                            {% for message in chat_history %}
+                                {% if message.is_user %}
+                                    <div class="message user">
+                                        <div>
+                                            <div class="message-content">
+                                                {{ message.content }}
+                                            </div>
+                                            <div class="message-time">{{ message.timestamp.strftime('%H:%M') }}</div>
+                                        </div>
+                                        <div class="user-avatar">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="message bot">
+                                        <div class="bot-avatar">
+                                            <i class="fas fa-robot"></i>
+                                        </div>
+                                        <div>
+                                            <div class="message-content">
+                                                {{ message.content }}
+                                            </div>
+                                            <div class="message-time">{{ message.timestamp.strftime('%H:%M') }}</div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Typing indicator (hidden by default) -->
+                            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                                <div class="bot-avatar">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="message-content" style="padding: 10px;">
+                                    <div class="dot"></div>
+                                    <div class="dot"></div>
+                                    <div class="dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input">
+                            <form id="chat-form">
+                                <div class="input-group">
+                                    <input type="text" id="user-input" class="form-control" placeholder="اكتب رسالتك هنا..." autocomplete="off">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <!-- Suggested questions -->
+                            <div class="chat-suggestions" id="chat-suggestions">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const clearChatBtn = document.getElementById('clear-chat-btn');
+        const chatSuggestionsContainer = document.getElementById('chat-suggestions');
+        
+        // Scroll to bottom of chat
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Add message to chat
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser ? 'message user' : 'message bot';
+            
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            if (isUser) {
+                messageDiv.innerHTML = `
+                    <div>
+                        <div class="message-content">${content}</div>
+                        <div class="message-time">${timeStr}</div>
+                    </div>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="bot-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <div class="message-content">${content}</div>
+                        <div class="message-time">${timeStr}</div>
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        // Update suggestions
+        function updateSuggestions(suggestions) {
+            // Clear existing suggestions
+            chatSuggestionsContainer.innerHTML = '';
+            
+            // Add new suggestions
+            if (suggestions && suggestions.length > 0) {
+                suggestions.forEach(suggestion => {
+                    const suggestionDiv = document.createElement('div');
+                    suggestionDiv.className = 'chat-suggestion';
+                    suggestionDiv.textContent = suggestion;
+                    suggestionDiv.addEventListener('click', function() {
+                        const message = this.textContent.trim();
+                        sendMessage(message);
+                    });
+                    chatSuggestionsContainer.appendChild(suggestionDiv);
+                });
+            } else {
+                // Add default suggestions if none provided
+                const defaultSuggestions = [
+                    'كيف يمكنني الاستثمار في الأراضي الوقفية؟',
+                    'ما هي أنواع الأراضي المتاحة للاستثمار؟',
+                    'ما هي الشروط والمتطلبات للاستثمار؟',
+                    'كم يبلغ متوسط العائد السنوي للاستثمار؟'
+                ];
+                
+                defaultSuggestions.forEach(suggestion => {
+                    const suggestionDiv = document.createElement('div');
+                    suggestionDiv.className = 'chat-suggestion';
+                    suggestionDiv.textContent = suggestion;
+                    suggestionDiv.addEventListener('click', function() {
+                        const message = this.textContent.trim();
+                        sendMessage(message);
+                    });
+                    chatSuggestionsContainer.appendChild(suggestionDiv);
+                });
+            }
+        }
+        
+        // Send message to server
+        function sendMessage(message) {
+            // Add user message to chat
+            addMessage(message, true);
+            
+            // Clear input
+            userInput.value = '';
+            
+            // Show typing indicator
+            typingIndicator.style.display = 'flex';
+            scrollToBottom();
+            
+            // Send message to server
+            fetch('{{ url_for("chatbot.send_message") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide typing indicator
+                typingIndicator.style.display = 'none';
+                
+                // Add bot response to chat
+                addMessage(data.response);
+                
+                // Update suggestions if provided
+                if (data.suggestions) {
+                    updateSuggestions(data.suggestions);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                typingIndicator.style.display = 'none';
+                addMessage('عذراً، حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.');
+            });
+        }
+        
+        // Handle form submission
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (message) {
+                sendMessage(message);
+            }
+        });
+        
+        // Handle clear chat
+        clearChatBtn.addEventListener('click', function() {
+            if (confirm('هل أنت متأكد من مسح المحادثة؟')) {
+                fetch('{{ url_for("chatbot.clear_session") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove all messages except the welcome message
+                        while (chatMessages.children.length > 1) {
+                            chatMessages.removeChild(chatMessages.lastChild);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+        
+        // Scroll to bottom on load
+        scrollToBottom();
+        
+        // Update suggestions on load
+        updateSuggestions();
+    });
+</script>
+{% endblock %}

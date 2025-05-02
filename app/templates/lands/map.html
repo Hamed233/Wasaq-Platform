@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+
+{% block title %}الخريطة التفاعلية - وقاف{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: calc(100vh - 200px);
+        min-height: 500px;
+        width: 100%;
+        border-radius: 10px;
+    }
+    .filter-card {
+        border-radius: 10px;
+    }
+    .land-popup .land-title {
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+    .land-popup .land-details {
+        margin-bottom: 10px;
+    }
+    .land-popup .land-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    .land-popup .land-stat {
+        text-align: center;
+        padding: 5px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        flex: 1;
+        margin: 0 2px;
+    }
+    .land-popup .land-stat-value {
+        font-weight: bold;
+        color: #0d6efd;
+    }
+    .land-popup .land-stat-label {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    .legend-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .no-data-message, .error-message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Filters -->
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm filter-card">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>تصفية الأراضي الوقفية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="filter-form" method="get" action="{{ url_for('lands.map_view') }}">
+                        <div class="mb-3">
+                            <label for="region" class="form-label">المنطقة</label>
+                            <select class="form-select" id="region" name="region">
+                                <option value="">-- جميع المناطق --</option>
+                                {% for region in regions %}
+                                <option value="{{ region }}" {% if selected_region == region %}selected{% endif %}>
+                                    {{ region }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="type" class="form-label">نوع الأرض</label>
+                            <select class="form-select" id="type" name="type">
+                                <option value="">-- جميع الأنواع --</option>
+                                {% for land_type in land_types %}
+                                <option value="{{ land_type }}" {% if selected_type == land_type %}selected{% endif %}>
+                                    {{ land_type }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">الحالة</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">-- جميع الحالات --</option>
+                                {% for status_option in statuses %}
+                                <option value="{{ status_option }}" {% if selected_status == status_option %}selected{% endif %}>
+                                    {% if status_option == 'available' %}
+                                        متاحة للاستثمار
+                                    {% elif status_option == 'invested' %}
+                                        قيد الاستثمار
+                                    {% elif status_option == 'under_development' %}
+                                        قيد التطوير
+                                    {% else %}
+                                        {{ status_option }}
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" id="apply-filter-btn">
+                                <i class="fas fa-search me-2"></i>تطبيق التصفية
+                            </button>
+                            <a href="{{ url_for('lands.map_view') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-2"></i>إعادة ضبط
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Map Legend -->
+            <div class="card border-0 shadow-sm filter-card mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-map-signs me-2"></i>مفتاح الخريطة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="legend-dot" style="background-color: #28a745;"></span>
+                            <span class="ms-2">متاحة للاستثمار</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="legend-dot" style="background-color: #007bff;"></span>
+                            <span class="ms-2">قيد الاستثمار</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="legend-dot" style="background-color: #fd7e14;"></span>
+                            <span class="ms-2">قيد التطوير</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="legend-dot" style="background-color: #6c757d;"></span>
+                            <span class="ms-2">غير متاحة</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Summary -->
+            <div class="card border-0 shadow-sm filter-card mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>ملخص الإحصائيات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>عدد الأراضي:</span>
+                            <strong>{{ total_lands }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>إجمالي المساحة:</span>
+                            <strong>{{ '{:,.0f}'.format(total_area) }} متر مربع</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>إجمالي الدخل:</span>
+                            <strong>{{ '{:,.0f}'.format(total_income) }} ريال</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>متوسط العائد:</span>
+                            <strong>{{ '{:.1f}'.format(avg_return) }}%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map -->
+        <div class="col-md-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-map-marked-alt me-2"></i>خريطة الأراضي الوقفية
+                    </h5>
+                    <div>
+                        <a href="{{ url_for('lands.index') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list me-1"></i>عرض القائمة
+                        </a>
+                        {% if current_user.is_admin() %}
+                        <a href="{{ url_for('lands.add') }}" class="btn btn-primary btn-sm ms-2">
+                            <i class="fas fa-plus me-1"></i>إضافة أرض جديدة
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body p-0 map-container">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Global map variable
+    let mapInstance = null;
+    
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+        
+        // Initialize map
+        initializeMap();
+        
+        // Handle filter form submission
+        document.getElementById('filter-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            loadGeoJSONData();
+        });
+    });
+    
+    // Function to initialize the map
+    function initializeMap() {
+        console.log('Initializing map...');
+        
+        try {
+            // Clean up any existing map instance
+            if (mapInstance) {
+                console.log('Removing existing map instance...');
+                mapInstance.remove();
+                mapInstance = null;
+            }
+            
+            // Get the map container parent
+            const mapContainerParent = document.querySelector('.map-container');
+            
+            // Check if map container parent exists
+            if (!mapContainerParent) {
+                console.error('Map container parent not found!');
+                return;
+            }
+            
+            // Remove the existing map container completely
+            const oldMapContainer = document.getElementById('map');
+            if (oldMapContainer) {
+                console.log('Removing old map container...');
+                oldMapContainer.remove();
+            }
+            
+            // Create a new map container
+            console.log('Creating new map container...');
+            const newMapContainer = document.createElement('div');
+            newMapContainer.id = 'map';
+            newMapContainer.style.height = '600px';
+            mapContainerParent.appendChild(newMapContainer);
+            
+            console.log('Creating new map instance...');
+            
+            // Initialize map with a slight delay to ensure DOM is ready
+            setTimeout(() => {
+                try {
+                    // Initialize map
+                    const mapCenter = {{ map_center|tojson }};
+                    mapInstance = L.map('map', {
+                        center: [mapCenter.lat, mapCenter.lng],
+                        zoom: mapCenter.zoom
+                    });
+                    
+                    // Add OpenStreetMap tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(mapInstance);
+                    
+                    // Load GeoJSON data
+                    loadGeoJSONData();
+                } catch (err) {
+                    console.error('Error creating map:', err);
+                }
+            }, 100);
+        } catch (err) {
+            console.error('Error in map initialization:', err);
+        }
+    }
+    
+    // Function to determine marker color based on land status
+    function getMarkerColor(status) {
+        console.log('Status for coloring:', status);
+        // Ensure status is a string and trim any whitespace
+        status = String(status).trim();
+        
+        if (status === 'available') {
+            return '#28a745'; // green
+        } else if (status === 'invested') {
+            return '#007bff'; // blue
+        } else if (status === 'under_development') {
+            return '#fd7e14'; // orange
+        } else {
+            console.log('Unknown status:', status);
+            return '#6c757d'; // gray
+        }
+    }
+    
+    // Function to load and display GeoJSON data
+    function loadGeoJSONData() {
+        if (!mapInstance) {
+            console.error('Map not initialized!');
+            return;
+        }
+        
+        console.log('Loading GeoJSON data...');
+        
+        // Clear any existing error or no-data messages
+        const existingMessages = document.querySelectorAll('.no-data-message, .error-message');
+        existingMessages.forEach(msg => msg.remove());
+        
+        // Get current filter values
+        const region = document.getElementById('region').value;
+        const landType = document.getElementById('type').value;
+        const status = document.getElementById('status').value;
+        
+        // Build API URL with query parameters
+        let apiUrl = '{{ url_for("lands.api_lands") }}';
+        const params = [];
+        if (region) params.push(`region=${encodeURIComponent(region)}`);
+        if (landType) params.push(`type=${encodeURIComponent(landType)}`);
+        if (status) params.push(`status=${encodeURIComponent(status)}`);
+        if (params.length > 0) {
+            apiUrl += '?' + params.join('&');
+        }
+        
+        console.log('Fetching data from:', apiUrl);
+        
+        // Fetch GeoJSON data from API
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(geojsonData => {
+                console.log('GeoJSON data received:', geojsonData);
+                
+                // Clear any existing GeoJSON layers
+                if (window.geoLayer) {
+                    mapInstance.removeLayer(window.geoLayer);
+                    window.geoLayer = null;
+                }
+                
+                // Add new GeoJSON layer if we have features
+                if (geojsonData && geojsonData.features && geojsonData.features.length > 0) {
+                    console.log('Number of features:', geojsonData.features.length);
+                    
+                    // Log each feature's status
+                    geojsonData.features.forEach((feature, index) => {
+                        console.log(`Feature ${index} status:`, feature.properties.status);
+                    });
+                    
+                    window.geoLayer = L.geoJSON(geojsonData, {
+                        pointToLayer: function(feature, latlng) {
+                            const status = feature.properties.status;
+                            const markerColor = getMarkerColor(status);
+                            console.log(`Creating marker for ${feature.properties.name} with status ${status} and color ${markerColor}`);
+                            return L.circleMarker(latlng, {
+                                radius: 8,
+                                fillColor: markerColor,
+                                color: '#fff',
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            });
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties && feature.properties.popup_content) {
+                                layer.bindPopup(feature.properties.popup_content);
+                            }
+                        }
+                    }).addTo(mapInstance);
+                    
+                    // Fit map to bounds
+                    try {
+                        const bounds = window.geoLayer.getBounds();
+                        if (bounds.isValid()) {
+                            mapInstance.fitBounds(bounds);
+                        }
+                    } catch (e) {
+                        console.error('Error fitting bounds:', e);
+                    }
+                } else {
+                    console.warn('No GeoJSON features found or empty features array');
+                    // Show a message on the map
+                    const noDataMessage = document.createElement('div');
+                    noDataMessage.className = 'no-data-message';
+                    noDataMessage.innerHTML = '<p>لا توجد أراضي تطابق معايير التصفية</p>';
+                    document.querySelector('.map-container').appendChild(noDataMessage);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading GeoJSON data:', error);
+                // Show error message
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.innerHTML = '<p>حدث خطأ أثناء تحميل البيانات</p>';
+                document.querySelector('.map-container').appendChild(errorMessage);
+            });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+
+{% block title %}u0633u062cu0644 u0627u0644u0645u062du0627u062fu062bu0627u062a - u0648u0642u0627u0641{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-session {
+        border-radius: 10px;
+        transition: transform 0.3s;
+    }
+    .chat-session:hover {
+        transform: translateY(-5px);
+    }
+    .session-header {
+        cursor: pointer;
+    }
+    .session-messages {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 10px;
+    }
+    .message.user {
+        background-color: #e9ecef;
+        margin-left: 20px;
+    }
+    .message.bot {
+        background-color: #f8f9fa;
+        margin-right: 20px;
+    }
+    .message-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .sentiment-positive {
+        color: #198754;
+    }
+    .sentiment-negative {
+        color: #dc3545;
+    }
+    .sentiment-neutral {
+        color: #6c757d;
+    }
+    .filter-card {
+        border-radius: 10px;
+    }
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Filters -->
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm filter-card">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>u062au0635u0641u064au0629 u0627u0644u0645u062du0627u062fu062bu0627u062a
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="filter-form" method="get" action="{{ url_for('chatbot.history') }}">
+                        <div class="mb-3">
+                            <label for="search" class="form-label">u0628u062du062b</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="search" name="search" value="{{ request.args.get('search', '') }}" placeholder="u0627u0628u062du062b u0641u064a u0627u0644u0645u062du0627u062fu062bu0627u062a...">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="intent" class="form-label">u0627u0644u0646u064au0629</label>
+                            <select class="form-select" id="intent" name="intent">
+                                <option value="">u062cu0645u064au0639 u0627u0644u0646u0648u0627u064au0627</option>
+                                {% for intent in intents %}
+                                <option value="{{ intent }}" {% if request.args.get('intent') == intent %}selected{% endif %}>
+                                    {{ intent }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sentiment" class="form-label">u0627u0644u0645u0634u0627u0639u0631</label>
+                            <select class="form-select" id="sentiment" name="sentiment">
+                                <option value="">u062cu0645u064au0639 u0627u0644u0645u0634u0627u0639u0631</option>
+                                <option value="positive" {% if request.args.get('sentiment') == 'positive' %}selected{% endif %}>u0625u064au062cu0627u0628u064au0629</option>
+                                <option value="neutral" {% if request.args.get('sentiment') == 'neutral' %}selected{% endif %}>u0645u062du0627u064au062fu0629</option>
+                                <option value="negative" {% if request.args.get('sentiment') == 'negative' %}selected{% endif %}>u0633u0644u0628u064au0629</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="date_from" class="form-label">u0627u0644u062au0627u0631u064au062e</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.args.get('date_from', '') }}" placeholder="u0645u0646">
+                                </div>
+                                <div class="col-6">
+                                    <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.args.get('date_to', '') }}" placeholder="u0625u0644u0649">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>u062au0637u0628u064au0642 u0627u0644u062au0635u0641u064au0629
+                            </button>
+                            <a href="{{ url_for('chatbot.history') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-2"></i>u0625u0639u0627u062fu0629 u0636u0628u0637
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Stats Summary -->
+            <div class="card border-0 shadow-sm filter-card mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>u0625u062du0635u0627u0626u064au0627u062a u0627u0644u0645u062du0627u062fu062bu0627u062a
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>u0639u062fu062f u0627u0644u062cu0644u0633u0627u062a:</span>
+                            <strong>{{ sessions_count }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>u0639u062fu062f u0627u0644u0631u0633u0627u0626u0644:</span>
+                            <strong>{{ messages_count }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>u0645u062au0648u0633u0637 u0637u0648u0644 u0627u0644u062cu0644u0633u0629:</span>
+                            <strong>{{ avg_session_length }} u0631u0633u0627u0644u0629</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6 class="mb-2">u062au0648u0632u064au0639 u0627u0644u0645u0634u0627u0639u0631</h6>
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ sentiment_percentages.positive }}%" aria-valuenow="{{ sentiment_percentages.positive }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ sentiment_percentages.positive }}%
+                            </div>
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ sentiment_percentages.neutral }}%" aria-valuenow="{{ sentiment_percentages.neutral }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ sentiment_percentages.neutral }}%
+                            </div>
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ sentiment_percentages.negative }}%" aria-valuenow="{{ sentiment_percentages.negative }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ sentiment_percentages.negative }}%
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>u0625u064au062cu0627u0628u064au0629: {{ sentiment_counts.positive }}</span>
+                            <span>u0645u062du0627u064au062fu0629: {{ sentiment_counts.neutral }}</span>
+                            <span>u0633u0644u0628u064au0629: {{ sentiment_counts.negative }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Intents -->
+            <div class="card border-0 shadow-sm filter-card mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list-alt me-2"></i>u0623u0643u062bu0631 u0627u0644u0646u0648u0627u064au0627 u0634u064au0648u0639u0627u064b
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for intent, count in top_intents %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ intent }}
+                                <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat History -->
+        <div class="col-md-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0 d-inline-block">
+                            <i class="fas fa-history me-2"></i>u0633u062cu0644 u0627u0644u0645u062du0627u062fu062bu0627u062a
+                        </h5>
+                        {% if request.args %}
+                        <span class="badge bg-primary ms-2">u0646u062au0627u0626u062c u0645u0635u0641u0627u0629</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{{ url_for('chatbot.index') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-comment me-1"></i>u0645u062du0627u062fu062bu0629 u062cu062fu064au062fu0629
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if sessions %}
+                        <div class="accordion" id="chatSessionsAccordion">
+                            {% for session in sessions %}
+                                <div class="card mb-3 border-0 shadow-sm chat-session">
+                                    <div class="card-header bg-white py-3 session-header" id="heading{{ session.id }}" data-bs-toggle="collapse" data-bs-target="#collapse{{ session.id }}" aria-expanded="false" aria-controls="collapse{{ session.id }}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-0">u062cu0644u0633u0629 {{ session.id }}</h6>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-calendar-alt me-1"></i>{{ session.start_time.strftime('%Y-%m-%d %H:%M') }}
+                                                    <span class="mx-2">|</span>
+                                                    <i class="fas fa-comments me-1"></i>{{ session.messages|length }} u0631u0633u0627u0644u0629
+                                                </small>
+                                            </div>
+                                            <div>
+                                                {% if session.overall_sentiment == 'positive' %}
+                                                    <i class="fas fa-smile sentiment-positive" title="u0645u0634u0627u0639u0631 u0625u064au062cu0627u0628u064au0629"></i>
+                                                {% elif session.overall_sentiment == 'negative' %}
+                                                    <i class="fas fa-frown sentiment-negative" title="u0645u0634u0627u0639u0631 u0633u0644u0628u064au0629"></i>
+                                                {% else %}
+                                                    <i class="fas fa-meh sentiment-neutral" title="u0645u0634u0627u0639u0631 u0645u062du0627u064au062fu0629"></i>
+                                                {% endif %}
+                                                <i class="fas fa-chevron-down ms-2"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="collapse{{ session.id }}" class="collapse" aria-labelledby="heading{{ session.id }}" data-bs-parent="#chatSessionsAccordion">
+                                        <div class="card-body">
+                                            <div class="session-messages">
+                                                {% for message in session.messages %}
+                                                    <div class="message {{ 'user' if message.is_user else 'bot' }}">
+                                                        <div class="message-content">{{ message.content }}</div>
+                                                        <div class="message-meta d-flex justify-content-between">
+                                                            <span>{{ message.timestamp.strftime('%H:%M:%S') }}</span>
+                                                            {% if not message.is_user %}
+                                                                <span>
+                                                                    <i class="fas fa-tag me-1"></i>{{ message.intent or 'u063au064au0631 u0645u062du062fu062f' }}
+                                                                    {% if message.sentiment == 'positive' %}
+                                                                        <i class="fas fa-smile ms-2 sentiment-positive" title="u0645u0634u0627u0639u0631 u0625u064au062cu0627u0628u064au0629"></i>
+                                                                    {% elif message.sentiment == 'negative' %}
+                                                                        <i class="fas fa-frown ms-2 sentiment-negative" title="u0645u0634u0627u0639u0631 u0633u0644u0628u064au0629"></i>
+                                                                    {% else %}
+                                                                        <i class="fas fa-meh ms-2 sentiment-neutral" title="u0645u0634u0627u0639u0631 u0645u062du0627u064au062fu0629"></i>
+                                                                    {% endif %}
+                                                                </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="mt-3 text-end">
+                                                <a href="{{ url_for('chatbot.export_session', session_id=session.id) }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-download me-1"></i>u062au0635u062fu064au0631
+                                                </a>
+                                                <a href="{{ url_for('chatbot.delete_session', session_id=session.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('u0647u0644 u0623u0646u062a u0645u062au0623u0643u062f u0645u0646 u062du0630u0641 u0647u0630u0647 u0627u0644u0645u062du0627u062fu062bu0629u061f')">
+                                                    <i class="fas fa-trash me-1"></i>u062du0630u0641
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if pagination.pages > 1 %}
+                            <div class="pagination-container mt-4">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination">
+                                        {% if pagination.has_prev %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('chatbot.history', page=pagination.prev_num, **request.args) }}" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <a class="page-link" href="#" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        
+                                        {% for page in pagination.iter_pages() %}
+                                            {% if page %}
+                                                {% if page != pagination.page %}
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="{{ url_for('chatbot.history', page=page, **request.args) }}">{{ page }}</a>
+                                                    </li>
+                                                {% else %}
+                                                    <li class="page-item active">
+                                                        <a class="page-link" href="#">{{ page }}</a>
+                                                    </li>
+                                                {% endif %}
+                                            {% else %}
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" href="#">...</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if pagination.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('chatbot.history', page=pagination.next_num, **request.args) }}" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <a class="page-link" href="#" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <h5>u0644u0645 u064au062au0645 u0627u0644u0639u062bu0648u0631 u0639u0644u0649 u0645u062du0627u062fu062bu0627u062a</h5>
+                            <p class="text-muted">u0644u0645 u064au062au0645 u0627u0644u0639u062bu0648u0631 u0639u0644u0649 u0623u064a u0645u062du0627u062fu062bu0627u062a u062au0637u0627u0628u0642 u0645u0639u0627u064au064au0631 u0627u0644u0628u062du062b u0627u0644u062eu0627u0635u0629 u0628u0643.</p>
+                            <a href="{{ url_for('chatbot.index') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-comment me-1"></i>u0628u062fu0621 u0645u062du0627u062fu062bu0629 u062cu062fu064au062fu0629
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

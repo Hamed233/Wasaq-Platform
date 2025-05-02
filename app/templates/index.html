@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}وقاف - خارطتك نحو الوقف المثالي{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-center py-5 bg-light rounded">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 text-lg-end">
+                <h1 class="display-4 fw-bold mb-4">وقاف</h1>
+                <h2 class="h3 mb-4">خارطتك نحو الوقف المثالي</h2>
+                <p class="lead mb-4">منصة رقمية متكاملة لإدارة الأراضي الوقفية باستخدام نظم المعلومات الجغرافية والذكاء الاصطناعي</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('lands.map_view') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                        <i class="fas fa-map-marked-alt me-2"></i>استكشف الخريطة
+                    </a>
+                    <a href="{{ url_for('chatbot.index') }}" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="fas fa-robot me-2"></i>تحدث مع المساعد الذكي
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 mt-5 mt-lg-0">
+                <img src="{{ url_for('static', filename='images/hero-map.png') }}" alt="خريطة وقاف" class="img-fluid rounded shadow-lg">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">الخصائص المميزة</h2>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon bg-primary bg-gradient text-white rounded-circle mb-3 mx-auto" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-map-marked-alt fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">نظم المعلومات الجغرافية (GIS)</h5>
+                        <p class="card-text">لتحديد الأوقاف وتواقيعها</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon bg-primary bg-gradient text-white rounded-circle mb-3 mx-auto" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-brain fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">الذكاء الاصطناعي (AI)</h5>
+                        <p class="card-text">لتحليل البيانات وتوقع العوائد</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon bg-primary bg-gradient text-white rounded-circle mb-3 mx-auto" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-cubes fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">البلوكتشين (Blockchain)</h5>
+                        <p class="card-text">لضمان أمان وسلامة البيانات</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon bg-primary bg-gradient text-white rounded-circle mb-3 mx-auto" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-database fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">تحليل البيانات الضخمة</h5>
+                        <p class="card-text">للاستفادة من البيانات بشكل أفضل</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Solution Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h2 class="mb-4">نظام GIS للوقف</h2>
+                <p class="lead">وقاف منصة رقمية متكاملة تعتمد على نظام المعلومات الجغرافية (GIS) لإدارة الأراضي الوقفية. توفر خرائط تفاعلية تعرض جميع الأوقاف وتواقيعها، وتسمح للمستخدمين بالبحث عن الأوقاف وتحليل البيانات بشكل أفضل.</p>
+                <div class="d-flex flex-wrap mt-4">
+                    <div class="me-4 mb-3">
+                        <h5>تواقيع رقمية للوقف:</h5>
+                        <p>عرض بانات الوقف على خرائط تفاعلية</p>
+                    </div>
+                    <div class="mb-3">
+                        <h5>إدارة الأصول الوقفية:</h5>
+                        <p>تصنيف وتحليل البيانات لتحسين إدارة الأوقاف</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <img src="{{ url_for('static', filename='images/solution-map.png') }}" alt="نظام GIS للوقف" class="img-fluid rounded shadow">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Model Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">النموذج الأولي</h2>
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h4 class="card-title">خريطة تفاعلية للوقف</h4>
+                        <p class="card-text">توفر خريطة تفاعلية تعرض جميع الأوقاف وتواقيعها، وتسمح للمستخدمين بالبحث عن الأوقاف وتحليل البيانات بشكل أفضل.</p>
+                        <p class="card-text">كما توفر الخريطة معلومات حول كل وقف، مثل الموقع والنوع والقيمة.</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0">
+                        <a href="{{ url_for('lands.map_view') }}" class="btn btn-primary">استكشف الخريطة التفاعلية</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <img src="{{ url_for('static', filename='images/model-preview.png') }}" class="card-img-top" alt="نموذج أولي للخريطة التفاعلية">
+                    <div class="card-body">
+                        <h5 class="card-title">مميزات النموذج الأولي</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item border-0 ps-0">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                عرض بانات الوقف على خرائط تفاعلية
+                            </li>
+                            <li class="list-group-item border-0 ps-0">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                تحليل البيانات لتحسين إدارة الأوقاف
+                            </li>
+                            <li class="list-group-item border-0 ps-0">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                توفير معلومات حول كل وقف
+                            </li>
+                            <li class="list-group-item border-0 ps-0">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                تسهيل البحث عن الأوقاف
+                            </li>
+                            <li class="list-group-item border-0 ps-0">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                تحسين إدارة الأوقاف
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="py-5 bg-primary text-white text-center">
+    <div class="container">
+        <h2 class="mb-4">ابحث الآن عن الوقف المثالي</h2>
+        <p class="lead mb-4">سجل الآن للوصول إلى جميع المميزات والتواصلات الذكية</p>
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg px-4 gap-3">
+                <i class="fas fa-user-plus me-2"></i>
+                سجل الآن
+            </a>
+            <a href="{{ url_for('main.about') }}" class="btn btn-outline-light btn-lg px-4">
+                <i class="fas fa-info-circle me-2"></i>
+                المزيد عن الوقف
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

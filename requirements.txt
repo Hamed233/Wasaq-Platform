@@ -1,0 +1,46 @@
+# Flask and extensions
+Flask==2.3.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+Flask-WTF==1.2.1
+Flask-Login==0.6.3
+Flask-RESTful==0.3.10
+Flask-Cors==4.0.0
+
+# Database
+SQLAlchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# GIS and mapping
+geopandas==0.14.0
+folium==0.14.0
+shapely==2.0.2
+pyproj==3.6.1
+
+# AI and ML
+scikit-learn==1.3.2
+tensorflow==2.15.0
+transformers==4.35.2
+numpy==1.26.1
+pandas==2.1.3
+
+# NLP for chatbot
+nltk==3.8.1
+spacy==3.7.2
+chatterbot==1.0.8
+chatterbot-corpus==1.2.0
+
+# Visualization
+matplotlib==3.8.1
+seaborn==0.13.0
+plotly==5.18.0
+
+# Utilities
+python-dotenv==1.0.0
+pyjwt==2.8.0
+requests==2.31.0
+Werkzeug==2.3.7
+gunicorn==21.2.0
+
+# Testing
+pytest==7.4.3
