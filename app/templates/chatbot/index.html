@@ -402,28 +402,18 @@
         if (clearChatBtn) {
             clearChatBtn.addEventListener('click', function() {
                 if (confirm('هل أنت متأكد من رغبتك في مسح المحادثة؟')) {
-                    fetch('/chatbot/clear', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            // Clear chat messages
-                            chatMessages.innerHTML = '';
-                            
-                            // Add welcome message
-                            addMessage('مرحباً بك في مساعد وقاف الذكي! كيف يمكنني مساعدتك اليوم؟', false);
-                            
-                            // Show default suggestions
-                            updateSuggestions([]);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error clearing chat:', error);
-                    });
+                    // Clear chat messages directly in the UI
+                    chatMessages.innerHTML = '';
+                    
+                    // Add welcome message
+                    addMessage('مرحباً بك في مساعد وقاف الذكي! كيف يمكنني مساعدتك اليوم؟', false);
+                    
+                    // Show default suggestions
+                    updateSuggestions([]);
+                    
+                    // Clear session storage if used
+                    localStorage.removeItem('chatHistory');
+                    sessionStorage.removeItem('chatHistory');
                 }
             });
         }

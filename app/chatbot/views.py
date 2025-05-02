@@ -15,6 +15,20 @@ def index():
     if 'chat_session_id' not in session:
         session['chat_session_id'] = str(uuid.uuid4())
     
+    # Delete any existing messages for this session to ensure a clean start
+    if 'fresh_start' in request.args and request.args.get('fresh_start') == 'true':
+        if current_user.is_authenticated:
+            ChatMessage.query.filter_by(
+                user_id=current_user.id,
+                session_id=session['chat_session_id']
+            ).delete()
+        else:
+            ChatMessage.query.filter_by(
+                user_id=None,
+                session_id=session['chat_session_id']
+            ).delete()
+        db.session.commit()
+    
     # Get recent chat messages for this session
     chat_history = []
     if current_user.is_authenticated:
@@ -163,7 +177,7 @@ def view_session(session_id):
                               .first()
     
     if not session_exists:
-        flash('u0644u0627 u064au0645u0643u0646u0643 u0627u0644u0648u0635u0648u0644 u0625u0644u0649 u0647u0630u0647 u0627u0644u0645u062du0627u062fu062bu0629', 'danger')
+        flash('لا يمكنك الوصول إلى هذه المدة', 'danger')
         return redirect(url_for('chatbot.history'))
     
     # Get all messages in this session
@@ -195,12 +209,24 @@ def clear_session():
             
             db.session.commit()
             
-            # Generate a new session ID
-            session['chat_session_id'] = str(uuid.uuid4())
+            # Generate a new session ID to ensure a completely fresh start
+            new_session_id = str(uuid.uuid4())
+            session['chat_session_id'] = new_session_id
+            
+            # Create a welcome message for the new session
+            welcome_message = ChatMessage(
+                session_id=new_session_id,
+                content="مرحباً بك في مساعد وقاف الذكي! كيف يمكنني مساعدتك اليوم؟",
+                is_bot=True,
+                user_id=current_user.id if current_user.is_authenticated else None
+            )
+            db.session.add(welcome_message)
+            db.session.commit()
             
             return jsonify({
                 'status': 'success',
-                'message': 'Chat session cleared'
+                'message': 'Chat session cleared',
+                'new_session_id': new_session_id
             })
         
         except Exception as e:

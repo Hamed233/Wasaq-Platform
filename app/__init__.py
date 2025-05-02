@@ -39,6 +39,16 @@ def create_app(config_name):
     def inject_now():
         return {'now': datetime.datetime.now()}
     
+    # Register custom filters
+    @app.template_filter('without')
+    def without_url_param(d, param):
+        if not d:
+            return {}
+        new_d = d.copy()
+        if param in new_d:
+            new_d.pop(param)
+        return new_d
+    
     # Register blueprints
     from app.main import main as main_blueprint
     app.register_blueprint(main_blueprint)

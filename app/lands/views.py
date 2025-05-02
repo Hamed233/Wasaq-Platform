@@ -13,6 +13,7 @@ from datetime import datetime
 import os
 import random
 from sqlalchemy import func
+from datetime import timedelta
 
 @lands.route('/')
 @login_required
@@ -125,7 +126,7 @@ def map_view():
     land_types = db.session.query(Land.land_type).distinct().all()
     statuses = db.session.query(Land.status).distinct().all()
     
-    # Calculate summary statistics
+    # Get summary statistics
     total_lands = len(lands)
     total_area = sum(land.area for land in lands if land.area)
     total_income = sum(land.yearly_income for land in lands if land.yearly_income)
@@ -224,6 +225,13 @@ def view(land_id):
     recommendations = Recommendation.query.filter_by(land_id=land.id).all()
     reports = Report.query.filter_by(land_id=land.id).all()
     
+    # If no recommendations exist for this land, add demo data for this specific land
+    if not recommendations:
+        add_demo_data_for_land(land.id)
+        # Refresh the data
+        recommendations = Recommendation.query.filter_by(land_id=land.id).all()
+        reports = Report.query.filter_by(land_id=land.id).all()
+    
     # Get statistics grouped by category
     statistics = {}
     stats = Statistic.query.filter_by(land_id=land.id).all()
@@ -231,6 +239,10 @@ def view(land_id):
         if stat.category not in statistics:
             statistics[stat.category] = []
         statistics[stat.category].append(stat)
+    
+    # Debug output to help diagnose the issue
+    print(f"Found {len(recommendations)} recommendations, {len(reports)} reports, and {len(stats)} statistics for land {land_id}")
+    print(f"Statistics categories: {list(statistics.keys())}")
     
     return render_template('lands/view.html', land=land, recommendations=recommendations, reports=reports, statistics=statistics)
 
@@ -901,43 +913,37 @@ def add_demo_recommendations():
         num_recommendations = random.randint(1, 3)
         
         for i in range(num_recommendations):
-            # Generate random data for each recommendation
-            rec_type = random.choice(recommendation_types)
-            priority = random.choice(priorities)
-            status = random.choice(statuses)
+            rec_type = recommendation_types[i % len(recommendation_types)]
+            priority = priorities[i % len(priorities)]
+            status = statuses[i % len(statuses)]
             
             # Create title and description based on land type and recommendation type
+            land_type = land.land_type or 'العقار'
             if rec_type == 'تطوير':
-                title = f"مقترح تطوير {land.land_type} في {land.city}"
-                description = f"يقترح تطوير الأرض الوقفية في {land.district}، {land.city} لتحسين العائد السنوي وزيادة قيمة الأصول. يتضمن المشروع إنشاء مباني {land.land_type} حديثة تتناسب مع احتياجات المنطقة."
+                title = f"مقترح تطوير {land_type} في {land.city}"
+                description = f"يقترح تطوير الأرض الوقفية في {land.district}، {land.city} لتحسين العائد السنوي وزيادة قيمة الأصول. يتضمن المشروع إنشاء مباني {land_type} حديثة تتناسب مع احتياجات المنطقة."
             elif rec_type == 'استثمار':
                 title = f"فرصة استثمارية في {land.city}"
-                description = f"تمثل هذه الأرض فرصة استثمارية ممتازة في قطاع {land.land_type}. يمكن تحقيق عوائد مجزية من خلال الشراكة مع مستثمرين متخصصين في هذا المجال."
+                description = f"تمثل هذه الأرض فرصة استثمارية ممتازة في قطاع {land_type}. يمكن تحقيق عوائد مجزية من خلال الشراكة مع مستثمرين متخصصين في هذا المجال."
             elif rec_type == 'صيانة':
                 title = f"خطة صيانة للأرض في {land.district}"
                 description = f"تحتاج الأرض إلى أعمال صيانة وتحسين للبنية التحتية لزيادة جاذبيتها للمستثمرين. تشمل الخطة تحسين شبكات المياه والكهرباء والطرق المحيطة."
-            elif rec_type == 'تأجير':
-                title = f"مقترح تأجير الأرض في {land.city}"
-                description = f"يمكن تحقيق دخل ثابت من خلال تأجير الأرض لمستثمرين في قطاع {land.land_type} بعقود طويلة الأجل تضمن استقرار العائد."
-            elif rec_type == 'بيع':
-                title = f"دراسة جدوى بيع الأرض في {land.district}"
-                description = f"في حال كانت الأرض غير مجدية للاستثمار طويل الأجل، يمكن دراسة إمكانية بيعها والاستفادة من قيمتها في شراء أصول أكثر جدوى."
-            else:  # شراكة
-                title = f"مقترح شراكة استراتيجية في {land.city}"
-                description = f"يمكن تحقيق أقصى استفادة من الأرض من خلال شراكة استراتيجية مع مطورين متخصصين في قطاع {land.land_type}، مما يقلل المخاطر ويزيد العوائد."
+            else:
+                title = f"مقترح {rec_type} للأرض في {land.city}"
+                description = f"يمكن تحقيق عوائد أفضل من خلال {rec_type} الأرض بطريقة مبتكرة تتناسب مع احتياجات السوق الحالية."
             
             # Generate realistic financial data based on land area and type
             base_cost = land.area * random.uniform(500, 2000)
-            if land.land_type == 'سكني':
+            if land_type == 'سكني':
                 cost_multiplier = random.uniform(1.0, 1.5)
                 return_multiplier = random.uniform(0.08, 0.12)
-            elif land.land_type == 'تجاري':
+            elif land_type == 'تجاري':
                 cost_multiplier = random.uniform(1.5, 2.5)
                 return_multiplier = random.uniform(0.1, 0.18)
-            elif land.land_type == 'صناعي':
+            elif land_type == 'صناعي':
                 cost_multiplier = random.uniform(1.2, 2.0)
                 return_multiplier = random.uniform(0.09, 0.15)
-            elif land.land_type == 'زراعي':
+            elif land_type == 'زراعي':
                 cost_multiplier = random.uniform(0.5, 1.0)
                 return_multiplier = random.uniform(0.06, 0.1)
             else:  # مختلط، تعليمي، سياحي
@@ -949,6 +955,8 @@ def add_demo_recommendations():
             estimated_timeframe = random.randint(6, 36)  # 6 months to 3 years
             
             # Create the recommendation
+            print(f"Creating recommendation: {title} with type {rec_type}, priority {priority}, status {status}")
+            
             recommendation = Recommendation(
                 title=title,
                 description=description,
@@ -1006,9 +1014,8 @@ def add_demo_reports():
         num_reports = random.randint(1, 4)
         
         for i in range(num_reports):
-            # Generate random data for each report
-            report_type = random.choice(report_types)
-            status = random.choice(statuses)
+            report_type = report_types[i % len(report_types)]
+            status = statuses[i % len(statuses)]
             
             # Create title and content based on land type and report type
             if report_type == 'status':
@@ -1033,23 +1040,26 @@ def add_demo_reports():
             elif report_type == 'project_update':
                 title = f"تحديث مشروع {land.land_type} في {land.city}"
                 content = f"""<h3>تحديث مشروع الأرض الوقفية</h3>
-                <p>فيما يلي آخر التحديثات للمشروع المقام على الأرض الوقفية في {land.district}، {land.city}:</p>
+                <p>فيما يلي آخر التحديثات لمشروع الأرض الوقفية في {land.district}، {land.city}:</p>
                 
                 <h4>نسبة الإنجاز</h4>
-                <p>بلغت نسبة الإنجاز في المشروع {random.randint(10, 95)}% حتى تاريخ {datetime.now().strftime('%Y-%m-%d')}.</p>
+                <div class='progress mb-3'>
+                    <div class='progress-bar' role='progressbar' style='width: 65%' aria-valuenow='65' aria-valuemin='0' aria-valuemax='100'>65%</div>
+                </div>
                 
-                <h4>الأعمال المنجزة</h4>
+                <h4>المراحل المنجزة</h4>
                 <ul>
-                    <li>تم الانتهاء من أعمال الحفر والأساسات</li>
-                    <li>تم الانتهاء من {random.randint(20, 80)}% من الهيكل الإنشائي</li>
-                    <li>جاري العمل على {['التشطيبات الداخلية', 'الواجهات الخارجية', 'أعمال الكهرباء والسباكة'][random.randint(0, 2)]}</li>
+                    <li>الانتهاء من الدراسات والتصاميم الهندسية</li>
+                    <li>الحصول على التراخيص اللازمة</li>
+                    <li>البدء في أعمال الحفر والأساسات</li>
                 </ul>
                 
-                <h4>التحديات</h4>
-                <p>{['تأخر في توريد بعض المواد', 'ظروف جوية أثرت على سير العمل', 'لا توجد تحديات كبيرة، المشروع يسير وفق الخطة'][random.randint(0, 2)]}</p>
-                
-                <h4>الخطوات القادمة</h4>
-                <p>من المتوقع الانتهاء من المشروع بحلول {datetime.now().replace(year=datetime.now().year + 1).strftime('%Y-%m-%d')}.</p>
+                <h4>المراحل القادمة</h4>
+                <ul>
+                    <li>استكمال أعمال البناء والتشطيبات</li>
+                    <li>تركيب الأنظمة الكهربائية والميكانيكية</li>
+                    <li>أعمال التشطيبات النهائية والتسليم</li>
+                </ul>
                 """
             elif report_type == 'maintenance':
                 title = f"تقرير صيانة الأرض في {land.city}"
@@ -1088,31 +1098,76 @@ def add_demo_reports():
             else:  # financial
                 title = f"التقرير المالي للأرض في {land.city}"
                 content = f"""<h3>التقرير المالي للأرض الوقفية</h3>
-                <p>فيما يلي التقرير المالي للأرض الوقفية في {land.district}، {land.city} للفترة المنتهية في {datetime.now().strftime('%Y-%m-%d')}.</p>
+                <p>فيما يلي ملخص للأداء المالي للأرض الوقفية في {land.district}، {land.city} للعام الحالي:</p>
                 
                 <h4>الإيرادات</h4>
-                <p>إجمالي الإيرادات: {'{:,.0f}'.format(land.yearly_income if land.yearly_income > 0 else random.uniform(100000, 1000000))} ريال سعودي</p>
-                <p>نسبة النمو: {'{:.1f}'.format(random.uniform(-5, 15))}% مقارنة بالفترة السابقة</p>
+                <table class='table table-bordered'>
+                    <thead>
+                        <tr>
+                            <th>البند</th>
+                            <th>المبلغ (ريال)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>إيرادات التأجير</td>
+                            <td>{random.randint(100000, 500000)}</td>
+                        </tr>
+                        <tr>
+                            <td>إيرادات الاستثمار</td>
+                            <td>{random.randint(50000, 200000)}</td>
+                        </tr>
+                        <tr>
+                            <td>إيرادات أخرى</td>
+                            <td>{random.randint(10000, 50000)}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>إجمالي الإيرادات</strong></td>
+                            <td><strong>{random.randint(200000, 700000)}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
                 
                 <h4>المصروفات</h4>
-                <p>تكاليف الصيانة: {'{:,.0f}'.format(random.uniform(10000, 100000))} ريال سعودي</p>
-                <p>تكاليف الإدارة: {'{:,.0f}'.format(random.uniform(5000, 50000))} ريال سعودي</p>
-                <p>مصروفات أخرى: {'{:,.0f}'.format(random.uniform(1000, 20000))} ريال سعودي</p>
+                <table class='table table-bordered'>
+                    <thead>
+                        <tr>
+                            <th>البند</th>
+                            <th>المبلغ (ريال)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>تكاليف الصيانة</td>
+                            <td>{random.randint(20000, 100000)}</td>
+                        </tr>
+                        <tr>
+                            <td>تكاليف التشغيل</td>
+                            <td>{random.randint(30000, 150000)}</td>
+                        </tr>
+                        <tr>
+                            <td>مصروفات أخرى</td>
+                            <td>{random.randint(5000, 30000)}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>إجمالي المصروفات</strong></td>
+                            <td><strong>{random.randint(50000, 250000)}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
                 
                 <h4>صافي الدخل</h4>
-                <p>{'{:,.0f}'.format(land.yearly_income * 0.7 if land.yearly_income > 0 else random.uniform(50000, 800000))} ريال سعودي</p>
-                
-                <h4>العائد على الاستثمار</h4>
-                <p>{'{:.1f}'.format(land.annual_return if land.annual_return > 0 else random.uniform(5, 15))}%</p>
+                <p><strong>صافي الربح: {random.randint(100000, 500000)} ريال</strong></p>
+                <p>معدل العائد على الاستثمار: {land.annual_return}%</p>
                 """
             
             # Create the report
             report = Report(
+                land_id=land.id,
                 title=title,
                 content=content,
                 report_type=report_type,
                 status=status,
-                land_id=land.id,
                 user_id=admin_user.id,
                 published_at=datetime.now() if status == 'published' else None,
                 attachments=json.dumps([
@@ -1150,28 +1205,28 @@ def add_demo_statistics():
             {
                 'name': 'العائد السنوي',
                 'description': 'متوسط العائد السنوي للأرض',
-                'value': land.annual_return,
-                'unit': 'percentage',
+                'value': float(land.annual_return),
+                'unit': '%',
                 'time_period': 'yearly'
             },
             {
                 'name': 'الدخل السنوي',
                 'description': 'متوسط الدخل السنوي من الأرض',
-                'value': land.yearly_income,
+                'value': float(land.yearly_income),
                 'unit': 'SAR',
                 'time_period': 'yearly'
             },
             {
                 'name': 'قيمة الأرض التقديرية',
                 'description': 'القيمة السوقية التقديرية للأرض',
-                'value': land.area * random.uniform(2000, 5000),
+                'value': float(land.area * random.uniform(2000, 5000)),
                 'unit': 'SAR',
                 'time_period': 'current'
             },
             {
                 'name': 'تكاليف الصيانة',
                 'description': 'متوسط تكاليف الصيانة السنوية',
-                'value': land.area * random.uniform(50, 150),
+                'value': float(land.area * random.uniform(50, 150)),
                 'unit': 'SAR',
                 'time_period': 'yearly'
             }
@@ -1182,29 +1237,29 @@ def add_demo_statistics():
             {
                 'name': 'معدل الإشغال',
                 'description': 'نسبة الإشغال الحالية للأرض',
-                'value': land.occupancy_rate,
-                'unit': 'percentage',
+                'value': float(land.occupancy_rate),
+                'unit': '%',
                 'time_period': 'current'
             },
             {
                 'name': 'استهلاك المياه',
                 'description': 'متوسط استهلاك المياه الشهري',
-                'value': land.water_usage,
+                'value': float(land.water_usage),
                 'unit': 'cubic_meters',
                 'time_period': 'monthly'
             },
             {
                 'name': 'استهلاك الكهرباء',
                 'description': 'متوسط استهلاك الكهرباء الشهري',
-                'value': land.area * random.uniform(0.5, 2.0),
+                'value': float(land.area * random.uniform(0.5, 2.0)),
                 'unit': 'kWh',
                 'time_period': 'monthly'
             },
             {
                 'name': 'كفاءة استخدام المساحة',
                 'description': 'نسبة استغلال مساحة الأرض',
-                'value': random.uniform(60, 95),
-                'unit': 'percentage',
+                'value': float(random.uniform(60, 95)),
+                'unit': '%',
                 'time_period': 'current'
             }
         ]
@@ -1214,24 +1269,24 @@ def add_demo_statistics():
         if land.occupancy_rate > 0:
             demographic_stats = [
                 {
-                    'name': 'عدد المستفيدين',
+                    'name': 'عدد السكان في المنطقة',
                     'description': 'عدد الأشخاص المستفيدين من الأرض',
-                    'value': int(land.area / 50) * (land.occupancy_rate / 100),
+                    'value': float(int(land.area / 50) * (land.occupancy_rate / 100)),
                     'unit': 'count',
                     'time_period': 'current'
                 },
                 {
                     'name': 'متوسط العمر',
                     'description': 'متوسط عمر المستفيدين',
-                    'value': random.uniform(25, 45),
+                    'value': float(random.uniform(25, 45)),
                     'unit': 'years',
                     'time_period': 'current'
                 },
                 {
                     'name': 'نسبة الرضا',
                     'description': 'نسبة رضا المستفيدين عن الخدمات',
-                    'value': random.uniform(70, 95),
-                    'unit': 'percentage',
+                    'value': float(random.uniform(70, 95)),
+                    'unit': '%',
                     'time_period': 'quarterly'
                 }
             ]
@@ -1249,25 +1304,13 @@ def add_demo_statistics():
             
             for stat_data in stats:
                 statistic = Statistic(
-                    name=stat_data['name'],
-                    description=stat_data['description'],
+                    land_id=land.id,
                     category=category,
+                    name=stat_data['name'],
                     value=stat_data['value'],
                     unit=stat_data['unit'],
-                    time_period=stat_data['time_period'],
-                    land_id=land.id,
-                    data_source='نظام إدارة الأراضي الوقفية',
-                    raw_data=json.dumps({
-                        'historical_data': [
-                            {'date': (datetime.now().replace(month=datetime.now().month-3) if datetime.now().month > 3 else datetime.now().replace(year=datetime.now().year-1, month=12-(3-datetime.now().month))).strftime('%Y-%m-%d'), 'value': stat_data['value'] * random.uniform(0.85, 0.95)},
-                            {'date': (datetime.now().replace(month=datetime.now().month-2) if datetime.now().month > 2 else datetime.now().replace(year=datetime.now().year-1, month=12-(2-datetime.now().month))).strftime('%Y-%m-%d'), 'value': stat_data['value'] * random.uniform(0.9, 1.0)},
-                            {'date': (datetime.now().replace(month=datetime.now().month-1) if datetime.now().month > 1 else datetime.now().replace(year=datetime.now().year-1, month=12)).strftime('%Y-%m-%d'), 'value': stat_data['value'] * random.uniform(0.95, 1.05)}
-                        ],
-                        'metadata': {
-                            'collection_method': 'آلي',
-                            'margin_of_error': random.uniform(1, 5)
-                        }
-                    })
+                    description=stat_data['description'],
+                    time_period=stat_data['time_period']
                 )
                 db.session.add(statistic)
     
@@ -1277,3 +1320,290 @@ def add_demo_statistics():
     except Exception as e:
         db.session.rollback()
         print(f"Error adding demo statistics: {e}")
+
+def add_demo_data_for_land(land_id):
+    """Add demo recommendations, reports, and statistics for a specific land"""
+    # Get the land
+    land = Land.query.get(land_id)
+    if not land:
+        print(f"Land with ID {land_id} not found")
+        return False
+    
+    # Get an admin user
+    admin_user = User.query.filter_by(role='admin').first()
+    if not admin_user:
+        print("No admin user found. Using system user ID instead.")
+        # Use a system user ID instead of trying to create a new user
+        admin_id = 1  # Use a default ID for the system
+    else:
+        admin_id = admin_user.id
+    
+    # Add recommendations
+    recommendation_types = ['تطوير', 'استثمار', 'صيانة', 'تأجير', 'بيع', 'شراكة']
+    priorities = ['high', 'medium', 'low']
+    statuses = ['pending', 'approved', 'rejected', 'implemented']
+    
+    # Add 3 recommendations
+    for i in range(3):
+        rec_type = recommendation_types[i % len(recommendation_types)]
+        priority = priorities[i % len(priorities)]
+        status = statuses[i % len(statuses)]
+        
+        # Create title and description based on land type and recommendation type
+        land_type = land.land_type or 'العقار'
+        if rec_type == 'تطوير':
+            title = f"مقترح تطوير {land_type} في {land.city}"
+            description = f"يقترح تطوير الأرض الوقفية في {land.district}، {land.city} لتحسين العائد السنوي وزيادة قيمة الأصول. يتضمن المشروع إنشاء مباني {land_type} حديثة تتناسب مع احتياجات المنطقة."
+        elif rec_type == 'استثمار':
+            title = f"فرصة استثمارية في {land.city}"
+            description = f"تمثل هذه الأرض فرصة استثمارية ممتازة في قطاع {land_type}. يمكن تحقيق عوائد مجزية من خلال الشراكة مع مستثمرين متخصصين في هذا المجال."
+        elif rec_type == 'صيانة':
+            title = f"خطة صيانة للأرض في {land.district}"
+            description = f"تحتاج الأرض إلى أعمال صيانة وتحسين للبنية التحتية لزيادة جاذبيتها للمستثمرين. تشمل الخطة تحسين شبكات المياه والكهرباء والطرق المحيطة."
+        else:
+            title = f"مقترح {rec_type} للأرض في {land.city}"
+            description = f"يمكن تحقيق عوائد أفضل من خلال {rec_type} الأرض بطريقة مبتكرة تتناسب مع احتياجات السوق الحالية."
+        
+        # Add financial details
+        cost = random.randint(100000, 5000000)
+        expected_return = random.randint(5, 20)
+        implementation_time = random.randint(6, 36)
+        
+        print(f"Creating recommendation: {title} with type {rec_type}, priority {priority}, status {status}")
+        
+        recommendation = Recommendation(
+            land_id=land.id,
+            title=title,
+            description=description,
+            recommendation_type=rec_type,
+            priority=priority,
+            status=status,
+            estimated_cost=cost,
+            estimated_return=expected_return,
+            estimated_timeframe=implementation_time,
+            user_id=admin_id,
+            created_at=datetime.now() - timedelta(days=random.randint(1, 30))
+        )
+        
+        db.session.add(recommendation)
+    
+    # Try to commit recommendations
+    try:
+        db.session.commit()
+        print("Added recommendations successfully")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding recommendations: {e}")
+        return False
+    
+    # Add reports
+    report_types = ['status', 'project_update', 'maintenance', 'inspection', 'financial']
+    statuses = ['draft', 'published', 'archived']
+    
+    # Add 3 reports
+    for i in range(3):
+        report_type = report_types[i % len(report_types)]
+        status = statuses[i % len(statuses)]
+        
+        # Create title and content based on land type and report type
+        if report_type == 'status':
+            title = f"تقرير حالة الأرض في {land.district}، {land.city}"
+            content = f"""<h3>تقرير حالة الأرض الوقفية</h3>
+            <p>تم إجراء زيارة ميدانية للأرض الوقفية الواقعة في {land.district}، {land.city} بتاريخ {datetime.now().strftime('%Y-%m-%d')}.</p>
+            
+            <h4>الحالة العامة</h4>
+            <p>الأرض في حالة جيدة. تم تسوير الأرض بالكامل.</p>
+            
+            <h4>البنية التحتية</h4>
+            <p>تتوفر خدمات المياه والكهرباء والصرف الصحي في المنطقة. الطرق المؤدية إلى الأرض معبدة وبحالة جيدة.</p>
+            
+            <h4>التوصيات</h4>
+            <ul>
+                <li>تحديث سور الأرض وإضافة بوابة حديثة</li>
+                <li>تنظيف الأرض من المخلفات والأعشاب</li>
+                <li>وضع لوحة تعريفية بالأرض الوقفية</li>
+            </ul>
+            """
+        elif report_type == 'project_update':
+            title = f"تحديث مشروع تطوير الأرض في {land.city}"
+            content = f"""<h3>تحديث مشروع الأرض الوقفية</h3>
+            <p>فيما يلي آخر التحديثات لمشروع الأرض الوقفية في {land.district}، {land.city}:</p>
+            
+            <h4>نسبة الإنجاز</h4>
+            <div class='progress mb-3'>
+                <div class='progress-bar' role='progressbar' style='width: 65%' aria-valuenow='65' aria-valuemin='0' aria-valuemax='100'>65%</div>
+            </div>
+            
+            <h4>المراحل المنجزة</h4>
+            <ul>
+                <li>الانتهاء من الدراسات والتصاميم الهندسية</li>
+                <li>الحصول على التراخيص اللازمة</li>
+                <li>البدء في أعمال الحفر والأساسات</li>
+            </ul>
+            
+            <h4>المراحل القادمة</h4>
+            <ul>
+                <li>استكمال أعمال البناء والتشطيبات</li>
+                <li>تركيب الأنظمة الكهربائية والميكانيكية</li>
+                <li>أعمال التشطيبات النهائية والتسليم</li>
+            </ul>
+            """
+        elif report_type == 'financial':
+            title = f"التقرير المالي للأرض في {land.city}"
+            content = f"""<h3>التقرير المالي للأرض الوقفية</h3>
+            <p>فيما يلي ملخص للأداء المالي للأرض الوقفية في {land.district}، {land.city} للعام الحالي:</p>
+            
+            <h4>الإيرادات</h4>
+            <table class='table table-bordered'>
+                <thead>
+                    <tr>
+                        <th>البند</th>
+                        <th>المبلغ (ريال)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>إيرادات التأجير</td>
+                        <td>{random.randint(100000, 500000)}</td>
+                    </tr>
+                    <tr>
+                        <td>إيرادات الاستثمار</td>
+                        <td>{random.randint(50000, 200000)}</td>
+                    </tr>
+                    <tr>
+                        <td>إيرادات أخرى</td>
+                        <td>{random.randint(10000, 50000)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>إجمالي الإيرادات</strong></td>
+                        <td><strong>{random.randint(200000, 700000)}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>المصروفات</h4>
+            <table class='table table-bordered'>
+                <thead>
+                    <tr>
+                        <th>البند</th>
+                        <th>المبلغ (ريال)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>تكاليف الصيانة</td>
+                        <td>{random.randint(20000, 100000)}</td>
+                    </tr>
+                    <tr>
+                        <td>تكاليف التشغيل</td>
+                        <td>{random.randint(30000, 150000)}</td>
+                    </tr>
+                    <tr>
+                        <td>مصروفات أخرى</td>
+                        <td>{random.randint(5000, 30000)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>إجمالي المصروفات</strong></td>
+                        <td><strong>{random.randint(50000, 250000)}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>صافي الدخل</h4>
+            <p><strong>صافي الربح: {random.randint(100000, 500000)} ريال</strong></p>
+            <p>معدل العائد على الاستثمار: {land.annual_return}%</p>
+            """
+        else:
+            title = f"تقرير {report_type} للأرض في {land.city}"
+            content = f"""<h3>تقرير {report_type}</h3>
+            <p>هذا تقرير {report_type} للأرض الوقفية في {land.district}، {land.city}.</p>
+            <p>تاريخ التقرير: {datetime.now().strftime('%Y-%m-%d')}</p>
+            <p>حالة الأرض: {land.status}</p>
+            """
+        
+        report = Report(
+            land_id=land.id,
+            title=title,
+            content=content,
+            report_type=report_type,
+            status=status,
+            user_id=admin_id,
+            created_at=datetime.now() - timedelta(days=random.randint(1, 30))
+        )
+        
+        db.session.add(report)
+    
+    # Try to commit reports
+    try:
+        db.session.commit()
+        print("Added reports successfully")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding reports: {e}")
+    
+    # Add statistics
+    categories = ['financial', 'demographic', 'market', 'development']
+    
+    # Financial statistics
+    financial_stats = [
+        {'name': 'العائد السنوي', 'value': float(land.annual_return), 'unit': '%', 'description': 'متوسط العائد السنوي للأرض'},
+        {'name': 'قيمة الأرض', 'value': float(random.randint(1000000, 10000000)), 'unit': 'SAR', 'description': 'القيمة السوقية التقديرية للأرض'},
+        {'name': 'تكلفة التطوير', 'value': float(random.randint(500000, 5000000)), 'unit': 'SAR', 'description': 'التكلفة المقدرة لتطوير الأرض'},
+        {'name': 'العائد المتوقع بعد التطوير', 'value': float(land.annual_return + random.randint(2, 5)), 'unit': '%', 'description': 'العائد المتوقع بعد تنفيذ مشروع التطوير'}
+    ]
+    
+    # Demographic statistics
+    demographic_stats = [
+        {'name': 'عدد السكان في المنطقة', 'value': float(random.randint(10000, 500000)), 'unit': 'count', 'description': 'عدد السكان في المنطقة'},
+        {'name': 'معدل النمو السكاني', 'value': float(random.randint(2, 5)), 'unit': '%', 'description': 'معدل النمو السكاني في المنطقة'},
+        {'name': 'متوسط الدخل', 'value': float(random.randint(5000, 15000)), 'unit': 'SAR', 'description': 'متوسط الدخل للفرد في المنطقة'},
+        {'name': 'نسبة الشباب', 'value': float(random.randint(30, 60)), 'unit': '%', 'description': 'نسبة الشباب في المنطقة'}
+    ]
+    
+    # Market statistics
+    land_type = land.land_type or 'العقارات'
+    market_stats = [
+        {'name': 'متوسط سعر المتر', 'value': float(random.randint(1000, 5000)), 'unit': 'SAR', 'description': 'متوسط سعر المتر في المنطقة'},
+        {'name': 'معدل نمو أسعار العقارات', 'value': float(random.randint(3, 8)), 'unit': '%', 'description': 'معدل النمو السنوي لأسعار العقارات في المنطقة'},
+        {'name': 'نسبة الإشغال في المنطقة', 'value': float(random.randint(70, 95)), 'unit': '%', 'description': 'نسبة إشغال العقارات في المنطقة المحيطة'},
+        {'name': f'الطلب على {land_type}', 'value': float(random.randint(1, 4)), 'unit': 'count', 'description': f'الطلب على {land_type} في المنطقة'}
+    ]
+    
+    # Development statistics
+    development_stats = [
+        {'name': 'مؤشر التنمية في المنطقة', 'value': float(random.randint(1, 4)), 'unit': 'count', 'description': 'مؤشر التنمية في المنطقة'},
+        {'name': 'البنية التحتية', 'value': float(random.randint(1, 4)), 'unit': 'count', 'description': 'حالة البنية التحتية في المنطقة'},
+        {'name': 'القرب من الخدمات', 'value': float(random.randint(1, 10)), 'unit': 'km', 'description': 'القرب من الخدمات الأساسية'},
+        {'name': 'مشاريع التطوير القريبة', 'value': float(random.randint(1, 5)), 'unit': 'count', 'description': 'مشاريع التطوير القريبة من الأرض'}
+    ]
+    
+    # Add all statistics
+    all_stats = {
+        'financial': financial_stats,
+        'demographic': demographic_stats,
+        'market': market_stats,
+        'development': development_stats
+    }
+    
+    for category, stats in all_stats.items():
+        for stat in stats:
+            statistic = Statistic(
+                land_id=land.id,
+                category=category,
+                name=stat['name'],
+                value=stat['value'],
+                unit=stat['unit'],
+                description=stat['description'],
+                time_period='yearly'
+            )
+            db.session.add(statistic)
+    
+    # Try to commit statistics
+    try:
+        db.session.commit()
+        print(f"Added demo data for land ID {land_id}")
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding statistics: {e}")
+        return False

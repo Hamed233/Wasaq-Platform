@@ -232,23 +232,23 @@
                             
                             <div class="recommendation-metrics">
                                 <div class="recommendation-metric">
-                                    <div class="metric-value">{{ '{:,.0f}'.format(recommendation.estimated_cost) }}</div>
+                                    <div class="metric-value">{{ '{:,.0f}'.format(recommendation.estimated_cost or 0) }}</div>
                                     <div class="metric-label">التكلفة (ريال)</div>
                                 </div>
                                 <div class="recommendation-metric">
-                                    <div class="metric-value">{{ recommendation.estimated_return }}%</div>
+                                    <div class="metric-value">{{ '{:.1f}'.format(recommendation.estimated_return or 0) }}%</div>
                                     <div class="metric-label">العائد المتوقع</div>
                                 </div>
                                 <div class="recommendation-metric">
-                                    <div class="metric-value">{{ recommendation.estimated_timeframe }}</div>
+                                    <div class="metric-value">{{ recommendation.estimated_timeframe or 0 }}</div>
                                     <div class="metric-label">المدة (شهر)</div>
                                 </div>
                             </div>
                             
                             <div class="mt-3">
-                                <small class="text-muted">نسبة الثقة: {{ '{:.0f}'.format(recommendation.confidence_score * 100) }}%</small>
+                                <small class="text-muted">نسبة الثقة: {{ '{:.0f}'.format((recommendation.confidence_score or 0) * 100) }}%</small>
                                 <div class="confidence-indicator">
-                                    <div class="confidence-bar {{ 'confidence-high' if recommendation.confidence_score >= 0.7 else 'confidence-medium' if recommendation.confidence_score >= 0.4 else 'confidence-low' }}" style="width: {{ recommendation.confidence_score * 100 }}%"></div>
+                                    <div class="confidence-bar {{ 'confidence-high' if (recommendation.confidence_score or 0) >= 0.7 else 'confidence-medium' if (recommendation.confidence_score or 0) >= 0.4 else 'confidence-low' }}" style="width: {{ (recommendation.confidence_score or 0) * 100 }}%"></div>
                                 </div>
                             </div>
                         </div>
@@ -301,7 +301,7 @@
                             <ul class="pagination">
                                 {% if pagination.has_prev %}
                                     <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('dashboard.recommendations', page=pagination.prev_num, **request.args) }}" aria-label="Previous">
+                                        <a class="page-link" href="{{ url_for('dashboard.recommendations', page=pagination.prev_num, **request.args|without('page')) }}" aria-label="Previous">
                                             <span aria-hidden="true">&laquo;</span>
                                         </a>
                                     </li>
@@ -317,7 +317,7 @@
                                     {% if page %}
                                         {% if page != pagination.page %}
                                             <li class="page-item">
-                                                <a class="page-link" href="{{ url_for('dashboard.recommendations', page=page, **request.args) }}">{{ page }}</a>
+                                                <a class="page-link" href="{{ url_for('dashboard.recommendations', page=page, **request.args|without('page')) }}">{{ page }}</a>
                                             </li>
                                         {% else %}
                                             <li class="page-item active">
@@ -333,7 +333,7 @@
                                 
                                 {% if pagination.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('dashboard.recommendations', page=pagination.next_num, **request.args) }}" aria-label="Next">
+                                        <a class="page-link" href="{{ url_for('dashboard.recommendations', page=pagination.next_num, **request.args|without('page')) }}" aria-label="Next">
                                             <span aria-hidden="true">&raquo;</span>
                                         </a>
                                     </li>
