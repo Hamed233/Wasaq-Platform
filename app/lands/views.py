@@ -882,7 +882,7 @@ def add_demo_recommendations():
     # Get an admin user or create one if none exists
     admin_user = User.query.filter_by(role='admin').first()
     if not admin_user:
-        admin_user = User(username='admin', email='admin@waqaf.sa', 
+        admin_user = User(username='admin', email='admin@wasaq.sa', 
                           password='adminpass', role='admin',
                           first_name='مدير', last_name='النظام')
         db.session.add(admin_user)
@@ -988,7 +988,7 @@ def add_demo_reports():
     # Get an admin user or create one if none exists
     admin_user = User.query.filter_by(role='admin').first()
     if not admin_user:
-        admin_user = User(username='admin', email='admin@waqaf.sa', 
+        admin_user = User(username='admin', email='admin@wasaq.sa', 
                           password='adminpass', role='admin',
                           first_name='مدير', last_name='النظام')
         db.session.add(admin_user)

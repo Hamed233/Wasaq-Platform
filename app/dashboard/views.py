@@ -375,7 +375,7 @@ def reports():
     
     # Arabic UI text
     arabic_ui_text = {
-        'title_ar': 'تقارير الأداء - وقاف',
+        'title_ar': 'تقارير الأداء - وثاق',
         'page_header_ar': 'تقارير الأداء',
         'add_report_button_ar': 'إضافة تقرير جديد',
         'report_type_label_ar': 'نوع التقرير',

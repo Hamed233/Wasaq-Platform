@@ -104,20 +104,25 @@
     .chat-suggestions {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 10px;
+        gap: 8px;
+        margin-top: 15px;
     }
     .chat-suggestion {
-        background-color: #f0f0f0;
-        border: 1px solid #e0e0e0;
-        border-radius: 20px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 18px;
         padding: 8px 15px;
         font-size: 0.9rem;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
     .chat-suggestion:hover {
-        background-color: #e0e0e0;
+        background-color: #e9ecef;
+        border-color: #ced4da;
     }
 </style>
 {% endblock %}
@@ -138,7 +143,7 @@
                         <li>الإجابة على الأسئلة المتعلقة بالأراضي الوقفية</li>
                         <li>تقديم معلومات عن فرص الاستثمار المتاحة</li>
                         <li>شرح إجراءات الاستثمار والتطوير</li>
-                        <li>توفير إحصائيات وتقارير عن الأوقاف</li>
+                        <li>توفير إحصائيات وتقارير عن الأوثاق</li>
                         <li>المساعدة في استخدام منصة وقاف</li>
                     </ul>
                     <p>يمكنك طرح أسئلتك باللغة العربية وسيقوم المساعد بالرد عليك في أسرع وقت.</p>
@@ -147,9 +152,9 @@
                         <button id="clear-chat-btn" class="btn btn-outline-secondary">
                             <i class="fas fa-trash me-2"></i>مسح المحادثة
                         </button>
-                        <a href="{{ url_for('chatbot.history') }}" class="btn btn-outline-primary">
+                        <!-- <a href="{{ url_for('chatbot.history') }}" class="btn btn-outline-primary">
                             <i class="fas fa-history me-2"></i>سجل المحادثات
-                        </a>
+                        </a> -->
                     </div>
                 </div>
             </div>
@@ -186,7 +191,7 @@
                                             <div class="message-content">
                                                 {{ message.content }}
                                             </div>
-                                            <div class="message-time">{{ message.timestamp.strftime('%H:%M') }}</div>
+                                            <div class="message-time">{{ message.created_at.strftime('%H:%M') }}</div>
                                         </div>
                                         <div class="user-avatar">
                                             <i class="fas fa-user"></i>
@@ -201,7 +206,7 @@
                                             <div class="message-content">
                                                 {{ message.content }}
                                             </div>
-                                            <div class="message-time">{{ message.timestamp.strftime('%H:%M') }}</div>
+                                            <div class="message-time">{{ message.created_at.strftime('%H:%M') }}</div>
                                         </div>
                                     </div>
                                 {% endif %}
@@ -313,7 +318,10 @@
                     'كيف يمكنني الاستثمار في الأراضي الوقفية؟',
                     'ما هي أنواع الأراضي المتاحة للاستثمار؟',
                     'ما هي الشروط والمتطلبات للاستثمار؟',
-                    'كم يبلغ متوسط العائد السنوي للاستثمار؟'
+                    'كم يبلغ متوسط العائد السنوي للاستثمار؟',
+                    'كيف أستخدم خريطة الأراضي؟',
+                    'ما هي التوصيات الذكية المتاحة؟',
+                    'كيف يمكنني الحصول على تقارير عن الأراضي؟'
                 ];
                 
                 defaultSuggestions.forEach(suggestion => {
@@ -374,40 +382,57 @@
         chatForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const message = userInput.value.trim();
+            
             if (message) {
+                // Add user message to chat
+                addMessage(message, true);
+                
+                // Clear input
+                userInput.value = '';
+                
+                // Show typing indicator
+                typingIndicator.style.display = 'flex';
+                
+                // Send message to server
                 sendMessage(message);
             }
         });
         
-        // Handle clear chat
-        clearChatBtn.addEventListener('click', function() {
-            if (confirm('هل أنت متأكد من مسح المحادثة؟')) {
-                fetch('{{ url_for("chatbot.clear_session") }}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token() }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Remove all messages except the welcome message
-                        while (chatMessages.children.length > 1) {
-                            chatMessages.removeChild(chatMessages.lastChild);
+        // Handle clear chat button
+        if (clearChatBtn) {
+            clearChatBtn.addEventListener('click', function() {
+                if (confirm('هل أنت متأكد من رغبتك في مسح المحادثة؟')) {
+                    fetch('/chatbot/clear', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
                         }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            }
-        });
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Clear chat messages
+                            chatMessages.innerHTML = '';
+                            
+                            // Add welcome message
+                            addMessage('مرحباً بك في مساعد وقاف الذكي! كيف يمكنني مساعدتك اليوم؟', false);
+                            
+                            // Show default suggestions
+                            updateSuggestions([]);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error clearing chat:', error);
+                    });
+                }
+            });
+        }
         
-        // Scroll to bottom on load
+        // Initial scroll to bottom
         scrollToBottom();
         
-        // Update suggestions on load
-        updateSuggestions();
+        // Show initial suggestions
+        updateSuggestions([]);
     });
 </script>
 {% endblock %}

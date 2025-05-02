@@ -30,6 +30,20 @@ def index():
             session_id=session['chat_session_id']
         ).order_by(ChatMessage.created_at).all()
     
+    # If no chat history exists, add a welcome message
+    if not chat_history:
+        welcome_message = ChatMessage(
+            session_id=session['chat_session_id'],
+            content="مرحباً بك في مساعد وقاف الذكي! كيف يمكنني مساعدتك اليوم؟",
+            is_bot=True,
+            user_id=current_user.id if current_user.is_authenticated else None
+        )
+        db.session.add(welcome_message)
+        db.session.commit()
+        
+        # Add welcome message to chat history
+        chat_history = [welcome_message]
+    
     return render_template('chatbot/index.html', chat_history=chat_history)
 
 @chatbot.route('/send', methods=['POST'])
@@ -66,6 +80,24 @@ def send_message():
         # Process message with chatbot
         intents_file = os.path.join(current_app.root_path, 'ai', 'intents.json')
         bot = WaqafChatbot(intents_file=intents_file)
+        
+        # Prepare and train the model if needed
+        model_path = os.path.join(current_app.root_path, 'ai', 'model.h5')
+        words_path = os.path.join(current_app.root_path, 'ai', 'words.json')
+        classes_path = os.path.join(current_app.root_path, 'ai', 'classes.json')
+        
+        # Check if model exists, if not train it
+        if not os.path.exists(model_path) or not os.path.exists(words_path) or not os.path.exists(classes_path):
+            # Prepare data and train model
+            bot.preprocess_data()
+            training_data = bot.create_training_data()
+            bot.build_model()
+            bot.train(epochs=100, batch_size=5)
+            # Save the model for future use
+            bot.save_model(model_path, words_path, classes_path)
+        else:
+            # Load existing model
+            bot.load_model(model_path, words_path, classes_path)
         
         # Get response from chatbot
         chat_response = bot.chat(message)

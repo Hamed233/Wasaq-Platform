@@ -1,31 +1,50 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}وقاف - منصة إدارة الأراضي الوقفية{% endblock %}</title>
-    
-    <!-- Bootstrap RTL CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Leaflet CSS for maps -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
-    <!-- Additional CSS -->
-    {% block extra_css %}{% endblock %}
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}وثاق - منصة إدارة الأراضي الوقفية{% endblock
+            %}</title>
+
+        <!-- Bootstrap RTL CSS -->
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+        <!-- Leaflet CSS for maps -->
+        <link rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+        <!-- Custom CSS -->
+        <link rel="stylesheet"
+            href="{{ url_for('static', filename='css/style.css') }}">
+
+        <link
+            href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+            rel="stylesheet">
+
+        <!-- Additional CSS -->
+        {% block extra_css %}{% endblock %}
+
+        <style>
+            body {
+                font-family: 'Cairo', sans-serif !important;
+            }
+
+            .bg-primary {
+                background-color: rgb(0, 0, 0) !important;
+            }
+        </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="وقاف" height="40" class="me-2">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="وثاق" height="40" class="me-2">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -148,7 +167,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4">
-                    <h5>وقاف</h5>
+                    <h5>وثاق</h5>
                     <p>منصة رقمية لإدارة الأراضي الوقفية باستخدام نظم المعلومات الجغرافية والذكاء الاصطناعي.</p>
                 </div>
                 <div class="col-md-4">
@@ -164,8 +183,8 @@
                 <div class="col-md-4">
                     <h5>تواصل معنا</h5>
                     <ul class="list-unstyled">
-                        <li><i class="fas fa-envelope me-2"></i> info@waqaf.sa</li>
-                        <li><i class="fas fa-phone me-2"></i> +966 11 000 0000</li>
+                        <li><i class="fas fa-envelope me-2"></i> info@wasaq.sa</li>
+                        <li><i class="fas fa-phone me-2"></i> +966 11 232 3234</li>
                         <li><i class="fas fa-map-marker-alt me-2"></i> الرياض، المملكة العربية السعودية</li>
                     </ul>
                     <div class="mt-3">
@@ -178,7 +197,7 @@
             </div>
             <hr class="my-4">
             <div class="text-center">
-                <p>&copy; {{ now.year }} وزارة الأوقاف - المملكة العربية السعودية. جميع الحقوق محفوظة.</p>
+                <p>&copy; {{ now.year }} وزارة الأوثاق - المملكة العربية السعودية. جميع الحقوق محفوظة.</p>
             </div>
         </div>
     </footer>

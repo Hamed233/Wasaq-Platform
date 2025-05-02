@@ -29,6 +29,17 @@ class WaqafChatbot:
         self.model = None
         self.stemmer = ISRIStemmer()
         
+        # Ensure required NLTK data is available
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            nltk.download('punkt')
+        
+        try:
+            nltk.data.find('corpora/stopwords')
+        except LookupError:
+            nltk.download('stopwords')
+        
         # Load intents if file is provided
         if intents_file and os.path.exists(intents_file):
             self.load_intents(intents_file)
@@ -208,38 +219,57 @@ class WaqafChatbot:
         return result
     
     def chat(self, message):
-        """Process a user message and return a response"""
-        if not self.model or not self.intents:
-            raise ValueError("Model not trained or intents not loaded")
+        """Process user message and generate response"""
+        # Clean and prepare message
+        message_words = nltk.word_tokenize(message)
+        message_words = [self.stemmer.stem(word.lower()) for word in message_words]
         
-        # Predict intent
-        intents = self.predict_class(message)
+        # Create bag of words
+        bag = [0] * len(self.words)
+        for word in message_words:
+            for i, w in enumerate(self.words):
+                if w == word:
+                    bag[i] = 1
         
-        # Get response
-        response = self.get_response(intents, self.intents)
-        
-        # Get suggestions for follow-up questions based on the detected intent
-        suggestions = []
-        if intents and len(intents) > 0:
-            tag = intents[0]['intent']
-            for intent in self.intents['intents']:
-                if intent['tag'] == tag and 'suggestions' in intent:
-                    suggestions = intent['suggestions']
-                    break
+        # Predict using model
+        if self.model:
+            res = self.model.predict(np.array([bag]))[0]
+            ERROR_THRESHOLD = 0.25
+            results = [[i, r] for i, r in enumerate(res) if r > ERROR_THRESHOLD]
             
-            # If no suggestions found for this intent, provide some default ones
-            if not suggestions:
-                suggestions = [
-                    "كيف يمكنني الاستثمار في الأراضي الوقفية؟",
-                    "ما هي أنواع الأراضي المتاحة للاستثمار؟",
-                    "ما هي الشروط والمتطلبات للاستثمار؟",
-                    "كم يبلغ متوسط العائد السنوي للاستثمار؟"
-                ]
-        
+            results.sort(key=lambda x: x[1], reverse=True)
+            return_list = []
+            
+            for r in results:
+                return_list.append({
+                    "intent": self.classes[r[0]],
+                    "probability": str(r[1])
+                })
+            
+            if return_list:
+                # Get the top intent
+                top_intent = return_list[0]
+                
+                # Find matching response
+                for intent in self.intents['intents']:
+                    if intent['tag'] == top_intent['intent']:
+                        # Get random response
+                        response = random.choice(intent['responses'])
+                        
+                        # Get suggestions if available
+                        suggestions = intent.get('suggestions', [])
+                        
+                        return {
+                            'response': response,
+                            'intents': [top_intent],
+                            'suggestions': suggestions
+                        }
+            
+        # If no match found or no model loaded
         return {
-            'response': response,
-            'intents': intents,
-            'suggestions': suggestions
+            'response': 'عذراً، لم أفهم سؤالك. هل يمكنك إعادة صياغته؟',
+            'intents': [],
+            'suggestions': []
         }
     
     def save_model(self, model_path, words_path, classes_path):
