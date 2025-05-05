@@ -23,6 +23,13 @@ class Land(db.Model):
     water_usage = db.Column(db.Float)  # water usage in cubic meters
     yearly_income = db.Column(db.Float)  # yearly income in SAR
     
+    # Contact information
+    contact_name = db.Column(db.String(100))
+    contact_phone = db.Column(db.String(20))
+    contact_email = db.Column(db.String(100))
+    contact_position = db.Column(db.String(100))
+    contact_notes = db.Column(db.Text)
+    
     # GIS data
     geom = db.Column(db.Text)  # GeoJSON representation of the land geometry
     
@@ -54,6 +61,11 @@ class Land(db.Model):
             'occupancy_rate': self.occupancy_rate,
             'water_usage': self.water_usage,
             'yearly_income': self.yearly_income,
+            'contact_name': self.contact_name,
+            'contact_phone': self.contact_phone,
+            'contact_email': self.contact_email,
+            'contact_position': self.contact_position,
+            'contact_notes': self.contact_notes,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

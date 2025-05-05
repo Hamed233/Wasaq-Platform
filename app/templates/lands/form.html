@@ -46,43 +46,28 @@
         </div>
         <div class="card-body">
             <form method="post" enctype="multipart/form-data">
-                {{ form.csrf_token }}
                 
                 <!-- Basic Information -->
                 <h6 class="mb-3 text-primary">المعلومات الأساسية</h6>
                 <div class="row mb-4">
                     <div class="col-md-6 mb-3">
                         <label for="name" class="form-label required-field">اسم الأرض</label>
-                        {{ form.name(class="form-control", placeholder="أدخل اسم الأرض") }}
-                        {% if form.name.errors %}
-                            <div class="text-danger">
-                                {% for error in form.name.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="text" class="form-control" id="name" name="name" placeholder="أدخل اسم الأرض" value="{{ land.name if land else '' }}" required>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="land_type" class="form-label required-field">نوع الأرض</label>
-                        {{ form.land_type(class="form-select") }}
-                        {% if form.land_type.errors %}
-                            <div class="text-danger">
-                                {% for error in form.land_type.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <select class="form-select" id="land_type" name="land_type" required>
+                            <option value="" selected disabled>اختر نوع الأرض</option>
+                            <option value="residential" {% if land and land.land_type == 'residential' %}selected{% endif %}>سكنية</option>
+                            <option value="commercial" {% if land and land.land_type == 'commercial' %}selected{% endif %}>تجارية</option>
+                            <option value="agricultural" {% if land and land.land_type == 'agricultural' %}selected{% endif %}>زراعية</option>
+                            <option value="industrial" {% if land and land.land_type == 'industrial' %}selected{% endif %}>صناعية</option>
+                            <option value="mixed" {% if land and land.land_type == 'mixed' %}selected{% endif %}>مختلطة</option>
+                        </select>
                     </div>
                     <div class="col-md-12 mb-3">
                         <label for="description" class="form-label">الوصف</label>
-                        {{ form.description(class="form-control", rows=3, placeholder="وصف مختصر للأرض") }}
-                        {% if form.description.errors %}
-                            <div class="text-danger">
-                                {% for error in form.description.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="وصف مختصر للأرض">{{ land.description if land else '' }}</textarea>
                     </div>
                 </div>
                 
@@ -91,47 +76,26 @@
                 <div class="row mb-4">
                     <div class="col-md-4 mb-3">
                         <label for="region" class="form-label required-field">المنطقة</label>
-                        {{ form.region(class="form-select") }}
-                        {% if form.region.errors %}
-                            <div class="text-danger">
-                                {% for error in form.region.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <select class="form-select" id="region" name="region" required>
+                            <option value="" selected disabled>اختر المنطقة</option>
+                            <option value="Northern" {% if land and land.region == 'Northern' %}selected{% endif %}>الشمالية</option>
+                            <option value="Southern" {% if land and land.region == 'Southern' %}selected{% endif %}>الجنوبية</option>
+                            <option value="Eastern" {% if land and land.region == 'Eastern' %}selected{% endif %}>الشرقية</option>
+                            <option value="Western" {% if land and land.region == 'Western' %}selected{% endif %}>الغربية</option>
+                            <option value="Central" {% if land and land.region == 'Central' %}selected{% endif %}>الوسطى</option>
+                        </select>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="city" class="form-label required-field">المدينة</label>
-                        {{ form.city(class="form-control", placeholder="أدخل اسم المدينة") }}
-                        {% if form.city.errors %}
-                            <div class="text-danger">
-                                {% for error in form.city.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="text" class="form-control" id="city" name="city" placeholder="أدخل اسم المدينة" value="{{ land.city if land else '' }}" required>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="district" class="form-label">الحي</label>
-                        {{ form.district(class="form-control", placeholder="أدخل اسم الحي") }}
-                        {% if form.district.errors %}
-                            <div class="text-danger">
-                                {% for error in form.district.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="text" class="form-control" id="district" name="district" placeholder="أدخل اسم الحي" value="{{ land.district if land else '' }}">
                     </div>
                     <div class="col-md-12 mb-3">
                         <label for="address" class="form-label">العنوان التفصيلي</label>
-                        {{ form.address(class="form-control", placeholder="أدخل العنوان التفصيلي") }}
-                        {% if form.address.errors %}
-                            <div class="text-danger">
-                                {% for error in form.address.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="text" class="form-control" id="address" name="address" placeholder="أدخل العنوان التفصيلي" value="{{ land.address if land else '' }}">
                     </div>
                 </div>
                 
@@ -140,25 +104,11 @@
                 <div class="row mb-4">
                     <div class="col-md-6 mb-3">
                         <label for="latitude" class="form-label required-field">خط العرض</label>
-                        {{ form.latitude(class="form-control", placeholder="مثال: 24.7136") }}
-                        {% if form.latitude.errors %}
-                            <div class="text-danger">
-                                {% for error in form.latitude.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="text" class="form-control" id="latitude" name="latitude" placeholder="مثال: 24.7136" value="{{ land.latitude if land else '' }}" required>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="longitude" class="form-label required-field">خط الطول</label>
-                        {{ form.longitude(class="form-control", placeholder="مثال: 46.6753") }}
-                        {% if form.longitude.errors %}
-                            <div class="text-danger">
-                                {% for error in form.longitude.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="text" class="form-control" id="longitude" name="longitude" placeholder="مثال: 46.6753" value="{{ land.longitude if land else '' }}" required>
                     </div>
                     <div class="col-md-12 mb-3">
                         <div id="map-picker" class="map-container"></div>
@@ -171,69 +121,57 @@
                 <div class="row mb-4">
                     <div class="col-md-4 mb-3">
                         <label for="area" class="form-label required-field">المساحة (متر مربع)</label>
-                        {{ form.area(class="form-control", placeholder="أدخل المساحة") }}
-                        {% if form.area.errors %}
-                            <div class="text-danger">
-                                {% for error in form.area.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="number" class="form-control" id="area" name="area" placeholder="أدخل المساحة" value="{{ land.area if land else '' }}" required>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="estimated_value" class="form-label">القيمة التقديرية (ريال)</label>
-                        {{ form.estimated_value(class="form-control", placeholder="أدخل القيمة التقديرية") }}
-                        {% if form.estimated_value.errors %}
-                            <div class="text-danger">
-                                {% for error in form.estimated_value.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="number" class="form-control" id="estimated_value" name="estimated_value" placeholder="أدخل القيمة التقديرية" value="{{ land.estimated_value if land else '' }}">
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="annual_return" class="form-label">العائد السنوي (%)</label>
-                        {{ form.annual_return(class="form-control", placeholder="أدخل العائد السنوي") }}
-                        {% if form.annual_return.errors %}
-                            <div class="text-danger">
-                                {% for error in form.annual_return.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="number" step="0.01" class="form-control" id="annual_return" name="annual_return" placeholder="أدخل العائد السنوي" value="{{ land.annual_return if land else '' }}">
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="occupancy_rate" class="form-label">معدل الإشغال (%)</label>
-                        {{ form.occupancy_rate(class="form-control", placeholder="أدخل معدل الإشغال") }}
-                        {% if form.occupancy_rate.errors %}
-                            <div class="text-danger">
-                                {% for error in form.occupancy_rate.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="number" step="0.01" class="form-control" id="occupancy_rate" name="occupancy_rate" placeholder="أدخل معدل الإشغال" value="{{ land.occupancy_rate if land else '' }}">
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="yearly_income" class="form-label">الدخل السنوي (ريال)</label>
-                        {{ form.yearly_income(class="form-control", placeholder="أدخل الدخل السنوي") }}
-                        {% if form.yearly_income.errors %}
-                            <div class="text-danger">
-                                {% for error in form.yearly_income.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="number" class="form-control" id="yearly_income" name="yearly_income" placeholder="أدخل الدخل السنوي" value="{{ land.yearly_income if land else '' }}">
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="status" class="form-label required-field">الحالة</label>
-                        {{ form.status(class="form-select") }}
-                        {% if form.status.errors %}
-                            <div class="text-danger">
-                                {% for error in form.status.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="" selected disabled>اختر الحالة</option>
+                            <option value="available" {% if land and land.status == 'available' %}selected{% endif %}>متاحة</option>
+                            <option value="invested" {% if land and land.status == 'invested' %}selected{% endif %}>مستثمرة</option>
+                            <option value="under_development" {% if land and land.status == 'under_development' %}selected{% endif %}>تحت التطوير</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Contact Information -->
+                <h6 class="mb-3 text-primary">معلومات الاتصال</h6>
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <label for="contact_name" class="form-label">اسم جهة الاتصال</label>
+                        <input type="text" class="form-control" id="contact_name" name="contact_name" placeholder="أدخل اسم جهة الاتصال" value="{{ land.contact_name if land else '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="contact_position" class="form-label">المنصب/الوظيفة</label>
+                        <input type="text" class="form-control" id="contact_position" name="contact_position" placeholder="أدخل المنصب أو الوظيفة" value="{{ land.contact_position if land else '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="contact_phone" class="form-label">رقم الهاتف</label>
+                        <input type="tel" class="form-control" id="contact_phone" name="contact_phone" placeholder="أدخل رقم الهاتف" value="{{ land.contact_phone if land else '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="contact_email" class="form-label">البريد الإلكتروني</label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" placeholder="أدخل البريد الإلكتروني" value="{{ land.contact_email if land else '' }}">
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label for="contact_notes" class="form-label">ملاحظات إضافية</label>
+                        <textarea class="form-control" id="contact_notes" name="contact_notes" rows="3" placeholder="أي معلومات إضافية عن جهة الاتصال">{{ land.contact_notes if land else '' }}</textarea>
                     </div>
                 </div>
                 
@@ -242,29 +180,18 @@
                 <div class="row mb-4">
                     <div class="col-md-12 mb-3">
                         <label for="geojson" class="form-label">بيانات GeoJSON (اختياري)</label>
-                        {{ form.geojson(class="form-control", rows=4, placeholder="أدخل بيانات GeoJSON للحدود") }}
+                        <textarea class="form-control" id="geojson" name="geom" rows="4" placeholder="أدخل بيانات GeoJSON للحدود">{{ land.geom if land else '' }}</textarea>
                         <small class="text-muted">يمكنك إدخال بيانات GeoJSON لتحديد حدود الأرض بدقة</small>
-                        {% if form.geojson.errors %}
-                            <div class="text-danger">
-                                {% for error in form.geojson.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
                 
-                <!-- Submit Buttons -->
-                <div class="d-flex justify-content-between">
-                    <a href="{{ url_for('lands.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-times me-1"></i>إلغاء
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i>
+                <!-- Submit Button -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary px-5">
                         {% if land %}
-                            حفظ التغييرات
+                            <i class="fas fa-save me-2"></i>حفظ التغييرات
                         {% else %}
-                            إضافة الأرض
+                            <i class="fas fa-plus-circle me-2"></i>إضافة الأرض
                         {% endif %}
                     </button>
                 </div>
@@ -277,69 +204,65 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize map for location picking
-        const mapPicker = L.map('map-picker').setView([24.7136, 46.6753], 6); // Default to Saudi Arabia
+        // Initialize map
+        var map = L.map('map-picker').setView([24.7136, 46.6753], 6);
         
-        // Add OpenStreetMap tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(mapPicker);
+        }).addTo(map);
         
-        // Get latitude and longitude input fields
-        const latInput = document.getElementById('latitude');
-        const lngInput = document.getElementById('longitude');
+        var marker;
         
-        // Create marker for selected location
-        let marker;
-        
-        // If editing existing land, set marker at current location
-        {% if land and land.latitude and land.longitude %}
-            const initialLat = {{ land.latitude }};
-            const initialLng = {{ land.longitude }};
-            mapPicker.setView([initialLat, initialLng], 15);
-            marker = L.marker([initialLat, initialLng]).addTo(mapPicker);
-        {% endif %}
-        
-        // Handle map click events
-        mapPicker.on('click', function(e) {
-            const lat = e.latlng.lat.toFixed(6);
-            const lng = e.latlng.lng.toFixed(6);
-            
-            // Update input fields
-            latInput.value = lat;
-            lngInput.value = lng;
-            
-            // Update or create marker
+        // Function to update marker position
+        function updateMarker(lat, lng) {
             if (marker) {
-                marker.setLatLng(e.latlng);
-            } else {
-                marker = L.marker(e.latlng).addTo(mapPicker);
+                map.removeLayer(marker);
             }
+            
+            marker = L.marker([lat, lng], {
+                draggable: true
+            }).addTo(map);
+            
+            marker.on('dragend', function(event) {
+                var position = marker.getLatLng();
+                document.getElementById('latitude').value = position.lat.toFixed(6);
+                document.getElementById('longitude').value = position.lng.toFixed(6);
+            });
+            
+            map.setView([lat, lng], 10);
+        }
+        
+        // Update marker when clicking on map
+        map.on('click', function(e) {
+            document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
+            document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+            updateMarker(e.latlng.lat, e.latlng.lng);
         });
         
-        // Update map when latitude/longitude inputs change manually
+        // Function to update map from input fields
         function updateMapFromInputs() {
-            const lat = parseFloat(latInput.value);
-            const lng = parseFloat(lngInput.value);
+            var latInput = document.getElementById('latitude');
+            var lngInput = document.getElementById('longitude');
             
-            if (!isNaN(lat) && !isNaN(lng)) {
-                mapPicker.setView([lat, lng], 15);
+            if (latInput.value && lngInput.value) {
+                var lat = parseFloat(latInput.value);
+                var lng = parseFloat(lngInput.value);
                 
-                if (marker) {
-                    marker.setLatLng([lat, lng]);
-                } else {
-                    marker = L.marker([lat, lng]).addTo(mapPicker);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    updateMarker(lat, lng);
                 }
             }
         }
+        
+        // Update map when latitude/longitude inputs change manually
+        var latInput = document.getElementById('latitude');
+        var lngInput = document.getElementById('longitude');
         
         latInput.addEventListener('change', updateMapFromInputs);
         lngInput.addEventListener('change', updateMapFromInputs);
         
         // Initialize map if coordinates are already set
-        if (latInput.value && lngInput.value) {
-            updateMapFromInputs();
-        }
+        updateMapFromInputs();
     });
 </script>
 {% endblock %}

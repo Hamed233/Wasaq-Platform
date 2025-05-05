@@ -302,28 +302,56 @@ def generate_recommendations(land_id):
 @login_required
 def add():
     """Add a new endowment land"""
-    if not current_user.is_admin():
-        flash('غير مسموح لك بتنفيذ هذه الإجراء', 'danger')
-        return redirect(url_for('lands.index'))
+    # Removed admin check to allow all authenticated users to add lands
     
     if request.method == 'POST':
         try:
-            # Get form data
+            # Get form data with validation
             name = request.form.get('name')
-            description = request.form.get('description')
+            if not name:
+                raise ValueError('اسم الأرض مطلوب')
+                
+            description = request.form.get('description', '')
             region = request.form.get('region')
+            if not region:
+                raise ValueError('المنطقة مطلوبة')
+                
             city = request.form.get('city')
-            district = request.form.get('district')
-            address = request.form.get('address')
-            latitude = float(request.form.get('latitude'))
-            longitude = float(request.form.get('longitude'))
-            area = float(request.form.get('area'))
+            if not city:
+                raise ValueError('المدينة مطلوبة')
+                
+            district = request.form.get('district', '')
+            address = request.form.get('address', '')
+            
+            # Handle numeric fields with proper validation
+            try:
+                latitude = float(request.form.get('latitude', 0))
+                longitude = float(request.form.get('longitude', 0))
+                area = float(request.form.get('area', 0))
+            except (ValueError, TypeError):
+                raise ValueError('يجب إدخال قيم صحيحة للإحداثيات والمساحة')
+                
             land_type = request.form.get('land_type')
-            status = request.form.get('status')
-            annual_return = float(request.form.get('annual_return', 0))
-            occupancy_rate = float(request.form.get('occupancy_rate', 0))
-            water_usage = float(request.form.get('water_usage', 0))
-            yearly_income = float(request.form.get('yearly_income', 0))
+            if not land_type:
+                raise ValueError('نوع الأرض مطلوب')
+                
+            status = request.form.get('status', 'available')
+            
+            # Handle optional numeric fields
+            try:
+                annual_return = float(request.form.get('annual_return', 0) or 0)
+                occupancy_rate = float(request.form.get('occupancy_rate', 0) or 0)
+                water_usage = float(request.form.get('water_usage', 0) or 0)
+                yearly_income = float(request.form.get('yearly_income', 0) or 0)
+            except (ValueError, TypeError):
+                raise ValueError('يجب إدخال قيم صحيحة للعائد ومعدل الإشغال والدخل')
+            
+            # Get contact information (all optional)
+            contact_name = request.form.get('contact_name', '')
+            contact_phone = request.form.get('contact_phone', '')
+            contact_email = request.form.get('contact_email', '')
+            contact_position = request.form.get('contact_position', '')
+            contact_notes = request.form.get('contact_notes', '')
             
             # Create new land
             land = Land(
@@ -341,11 +369,16 @@ def add():
                 annual_return=annual_return,
                 occupancy_rate=occupancy_rate,
                 water_usage=water_usage,
-                yearly_income=yearly_income
+                yearly_income=yearly_income,
+                contact_name=contact_name,
+                contact_phone=contact_phone,
+                contact_email=contact_email,
+                contact_position=contact_position,
+                contact_notes=contact_notes
             )
             
             # Handle GeoJSON data if provided
-            geom = request.form.get('geom')
+            geom = request.form.get('geom', '')
             if geom:
                 land.geom = geom
             
@@ -355,43 +388,79 @@ def add():
             flash('تمت إضافة الأرض الوقفية بنجاح', 'success')
             return redirect(url_for('lands.view', land_id=land.id))
         
+        except ValueError as e:
+            db.session.rollback()
+            flash(f'خطأ في البيانات المدخلة: {str(e)}', 'danger')
         except Exception as e:
             db.session.rollback()
             flash(f'خطأ عند إضافة الأرض: {str(e)}', 'danger')
     
-    return render_template('lands/add.html')
+    return render_template('lands/form.html')
 
 @lands.route('/<int:land_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit(land_id):
     """Edit an existing endowment land"""
-    if not current_user.is_admin():
-        flash('غير مسموح لك بتنفيذ هذه الإجراء', 'danger')
-        return redirect(url_for('lands.view', land_id=land_id))
+    # Removed admin check to allow all authenticated users to edit lands
     
     land = Land.query.get_or_404(land_id)
     
     if request.method == 'POST':
         try:
-            # Update land data
-            land.name = request.form.get('name')
-            land.description = request.form.get('description')
-            land.region = request.form.get('region')
-            land.city = request.form.get('city')
-            land.district = request.form.get('district')
-            land.address = request.form.get('address')
-            land.latitude = float(request.form.get('latitude'))
-            land.longitude = float(request.form.get('longitude'))
-            land.area = float(request.form.get('area'))
-            land.land_type = request.form.get('land_type')
-            land.status = request.form.get('status')
-            land.annual_return = float(request.form.get('annual_return', 0))
-            land.occupancy_rate = float(request.form.get('occupancy_rate', 0))
-            land.water_usage = float(request.form.get('water_usage', 0))
-            land.yearly_income = float(request.form.get('yearly_income', 0))
+            # Get form data with validation
+            name = request.form.get('name')
+            if not name:
+                raise ValueError('اسم الأرض مطلوب')
+                
+            land.name = name
+            land.description = request.form.get('description', '')
+            
+            region = request.form.get('region')
+            if not region:
+                raise ValueError('المنطقة مطلوبة')
+            land.region = region
+            
+            city = request.form.get('city')
+            if not city:
+                raise ValueError('المدينة مطلوبة')
+            land.city = city
+            
+            land.district = request.form.get('district', '')
+            land.address = request.form.get('address', '')
+            
+            # Handle numeric fields with proper validation
+            try:
+                land.latitude = float(request.form.get('latitude', 0))
+                land.longitude = float(request.form.get('longitude', 0))
+                land.area = float(request.form.get('area', 0))
+            except (ValueError, TypeError):
+                raise ValueError('يجب إدخال قيم صحيحة للإحداثيات والمساحة')
+            
+            land_type = request.form.get('land_type')
+            if not land_type:
+                raise ValueError('نوع الأرض مطلوب')
+            land.land_type = land_type
+            
+            land.status = request.form.get('status', 'available')
+            
+            # Handle optional numeric fields
+            try:
+                land.annual_return = float(request.form.get('annual_return', 0) or 0)
+                land.occupancy_rate = float(request.form.get('occupancy_rate', 0) or 0)
+                land.water_usage = float(request.form.get('water_usage', 0) or 0)
+                land.yearly_income = float(request.form.get('yearly_income', 0) or 0)
+            except (ValueError, TypeError):
+                raise ValueError('يجب إدخال قيم صحيحة للعائد ومعدل الإشغال والدخل')
+            
+            # Update contact information (all optional)
+            land.contact_name = request.form.get('contact_name', '')
+            land.contact_phone = request.form.get('contact_phone', '')
+            land.contact_email = request.form.get('contact_email', '')
+            land.contact_position = request.form.get('contact_position', '')
+            land.contact_notes = request.form.get('contact_notes', '')
             
             # Handle GeoJSON data if provided
-            geom = request.form.get('geom')
+            geom = request.form.get('geom', '')
             if geom:
                 land.geom = geom
             
@@ -401,11 +470,14 @@ def edit(land_id):
             flash('تم تحديث الأرض الوقفية بنجاح', 'success')
             return redirect(url_for('lands.view', land_id=land.id))
         
+        except ValueError as e:
+            db.session.rollback()
+            flash(f'خطأ في البيانات المدخلة: {str(e)}', 'danger')
         except Exception as e:
             db.session.rollback()
             flash(f'خطأ عند تحديث الأرض: {str(e)}', 'danger')
     
-    return render_template('lands/edit.html', land=land)
+    return render_template('lands/form.html', land=land)
 
 @lands.route('/<int:land_id>/delete', methods=['POST'])
 @login_required

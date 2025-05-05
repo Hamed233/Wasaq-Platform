@@ -213,11 +213,9 @@
                         <a href="{{ url_for('lands.map_view') }}" class="btn btn-outline-primary btn-sm">
                             <i class="fas fa-map me-1"></i>عرض الخريطة
                         </a>
-                        {% if current_user.is_admin() %}
                         <a href="{{ url_for('lands.add') }}" class="btn btn-primary btn-sm ms-2">
                             <i class="fas fa-plus me-1"></i>إضافة أرض جديدة
                         </a>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body">
@@ -339,11 +337,11 @@
                             <a href="{{ url_for('lands.index') }}" class="btn btn-primary mt-2">
                                 <i class="fas fa-redo me-1"></i>إعادة ضبط التصفية
                             </a>
-                            {% if current_user.is_admin() %}
+                            <!-- {% if current_user.is_admin() %} -->
                             <a href="{{ url_for('lands.add') }}" class="btn btn-outline-primary mt-2 ms-2">
                                 <i class="fas fa-plus me-1"></i>إضافة أرض جديدة
                             </a>
-                            {% endif %}
+                            <!-- {% endif %} -->
                         </div>
                     {% endif %}
                 </div>
